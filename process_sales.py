@@ -5,6 +5,8 @@ from datetime import datetime
 import logging
 from pathlib import Path
 
+from data_validation import validate_dataset
+
 # 2. CONFIGURATION - Hard-coded paths, settings, thresholds
 INPUT_FILE = "data/raw/sample_data.csv"
 OUTPUT_FILE = "output/processed_sales.csv"
@@ -44,20 +46,19 @@ def ingest_data(filepath):
         >>> print(df.head())
     """
     try:
-        # Convert to absolute path for better error messages
         filepath = Path(filepath)
-        if not filepath.exists():
-            raise FileNotFoundError(f"File not found: {filepath.absolute()}")
-            
-        df = pd.read_csv(filepath)
-        
-        # Validate that we got data
-        if df.empty:
+        expected_columns = ['customer_id', 'transaction_date', 'amount', 'product_category']
+        report, df = validate_dataset(filepath, expected_columns=expected_columns, allowed_extensions=['csv'], return_dataframe=True)
+
+        if not report.get('valid', False):
+            raise ValueError(report['checks'].get('schema') or report['checks'].get('file_exists') or report['checks'].get('format') or report['checks'].get('encoding') or 'Data validation failed')
+
+        if df is None or df.empty:
             raise ValueError(f"File is empty: {filepath.absolute()}")
-            
+
         logging.info(f"Ingested {len(df)} rows from {filepath}")
         return df
-        
+
     except pd.errors.EmptyDataError:
         logging.error(f"File is empty or malformed: {filepath}")
         raise ValueError(f"File is empty or malformed: {filepath}")
@@ -192,9 +193,10 @@ if __name__ == "__main__":
         print(f"Start time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print()
         
-        print("Step 1: Ingesting data...")
+        print("Step 1: Validating and ingesting data...")
         data = ingest_data(INPUT_FILE)
         print(f"  ✓ Loaded {len(data)} raw transactions")
+        print("  ✓ Validation report saved to output/intake_report.json")
         
         print("\nStep 2: Processing data...")
         clean_data = process_data(data, min_amount=MIN_AMOUNT)
