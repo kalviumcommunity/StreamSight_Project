@@ -1,90 +1,270 @@
-# StreamSight_Project
- 
-A production-ready data pipeline demonstrating Python data workflow foundations.
+# 🎥 StreamSight
 
-## Team
-Aman Tanmay Shubhdeep
+> **Transforming Viewer Engagement into Smarter Content Decisions**
 
-## Overview
+StreamSight is a Python-based viewer engagement analytics platform designed to help streaming service providers understand audience behavior through data. The platform provides a simplified video streaming experience where user interactions such as watch duration, pause frequency, completion rate, and search activity are recorded and analyzed.
 
-This project implements a sales data processing pipeline using the three-function pattern (ingest, process, output) for production-ready data workflows. The pipeline processes customer transaction data, cleans and transforms it, and outputs enriched results with customer metrics.
+Instead of focusing on building a complete streaming platform, StreamSight emphasizes collecting engagement metrics and converting them into meaningful insights that help acquisition teams make informed content investment decisions.
 
-## Project Structure
+---
+
+# 📖 Problem Statement
+
+Subscription-based streaming platforms capture viewer engagement data such as watch duration, pause frequency, and episode completion. However, acquisition teams often greenlight new content without understanding which viewer engagement patterns correlate with long-term retention.
+
+StreamSight solves this problem by collecting engagement data and presenting interactive analytics that reveal viewer behavior, helping organizations make data-driven content decisions.
+
+---
+
+# 🎯 Objectives
+
+- Capture viewer engagement data.
+- Analyze viewing behavior and engagement patterns.
+- Measure viewer retention using analytics.
+- Provide an interactive analytics dashboard.
+- Support data-driven content acquisition decisions.
+
+---
+
+# ✨ Features
+
+## 👤 User Features
+
+- Secure User Authentication
+- Video Search
+- Browse Content Categories
+- Video Playback
+- Continue Watching
+- Watch History
+- Bookmark Videos
+
+---
+
+## 📊 Analytics Features
+
+- Watch Duration Tracking
+- Pause Frequency Analysis
+- Completion Rate Monitoring
+- Search Analytics
+- Viewer Retention Insights
+- Trending Content Analysis
+- Engagement Dashboard
+
+---
+
+## 🔐 Admin Features
+
+- Upload Videos
+- Manage Content Library
+- View Analytics Dashboard
+- Monitor User Engagement
+- Generate Content Performance Reports
+
+---
+
+# ⚙️ System Workflow
 
 ```
-StreamSight_Project/
-├── data/
-│   └── raw/
-│       └── sample_data.csv       # Input transaction data
-├── output/
-│   └── processed_sales.csv       # Output processed data
-├── logs/
-│   └── workflow.log              # Pipeline execution logs
-├── process_sales.py              # Main pipeline script
-├── requirements.txt              # Python dependencies
-└── README.md                     # This file
+User Login
+      │
+      ▼
+Search Content
+      │
+      ▼
+Watch Video
+      │
+      ▼
+System Records
+
+• Watch Duration
+• Pause Frequency
+• Completion Rate
+• Search Activity
+• Watch History
+
+      │
+      ▼
+Database
+      │
+      ▼
+Analytics Engine
+      │
+      ▼
+Analytics Dashboard
+      │
+      ▼
+Content Acquisition Decisions
 ```
 
-## Installation
+---
 
-Install required dependencies:
+# 🛠️ Technology Stack
 
-```bash
-pip install -r requirements.txt
+## Backend
+
+- Python
+- Flask
+- SQLAlchemy
+
+## Database
+
+- SQLite
+- PostgreSQL (Future Scope)
+
+## Frontend
+
+- HTML5
+- CSS3
+- JavaScript
+- Bootstrap
+
+## Data Analytics
+
+- Pandas
+- NumPy
+
+## Data Visualization
+
+- Matplotlib
+- Plotly
+
+## Machine Learning (Future Scope)
+
+- Scikit-learn
+
+---
+
+# 📊 Engagement Metrics Collected
+
+| Metric | Description |
+|---------|-------------|
+| Watch Duration | Total viewing time of a user |
+| Pause Frequency | Number of pauses during playback |
+| Completion Rate | Percentage of video watched |
+| Search Activity | User search keywords |
+| Watch History | Previously watched videos |
+| Repeat Views | Number of replays |
+| Session Duration | Total viewing session time |
+
+---
+
+# 📈 Analytics Dashboard
+
+The dashboard provides valuable insights including:
+
+- 📺 Total Views
+- ⏱️ Average Watch Time
+- 📊 Completion Rate
+- ⏸️ Pause Frequency
+- 📈 Viewer Retention Score
+- 🔍 Most Searched Categories
+- 🔥 Top Performing Content
+- 📉 Viewer Drop-off Analysis
+- 📅 Engagement Trends
+
+---
+
+# 🚀 Future Enhancements
+
+- AI-powered Content Recommendation System
+- Viewer Segmentation
+- Retention Prediction using Machine Learning
+- Personalized Video Recommendations
+- Real-Time Analytics Dashboard
+- User Feedback & Sentiment Analysis
+- Genre-wise Performance Analysis
+
+---
+
+# 🌿 Git Workflow
+
+### Branching Strategy
+
+- `main` contains stable production-ready code.
+- Every new feature is developed in a separate feature branch.
+- Branch naming conventions:
+  - `feature/<feature-name>`
+  - `fix/<bug-name>`
+  - `docs/<documentation>`
+  - `refactor/<module>`
+  - `chore/<task>`
+
+---
+
+### Commit Message Convention
+
+Format
+
+```
+[type]: description
 ```
 
-## Usage
+Examples
 
-Run the data pipeline:
+```
+feat: implement viewer engagement tracking
 
-```bash
-python process_sales.py
+fix: resolve dashboard calculation bug
+
+docs: update project documentation
+
+refactor: optimize analytics module
+
+chore: update project dependencies
 ```
 
-The pipeline will:
-1. Ingest raw sales data from `data/raw/sample_data.csv`
-2. Process the data (remove duplicates, filter transactions, calculate customer metrics)
-3. Output results to `output/processed_sales.csv`
-4. Log all operations to `logs/workflow.log`
+---
 
-## Pipeline Functions
+### Pull Request Process
 
-### ingest_data(filepath)
-Reads CSV file into a pandas DataFrame. Handles file validation and error logging.
+- Every feature is submitted through a Pull Request.
+- PRs reference the related GitHub Issue.
+- Code is reviewed before merging.
+- Merge only after approval.
 
-### process_data(df, min_amount=0)
-Transforms raw data by:
-- Removing duplicate transactions
-- Filtering transactions below minimum amount
-- Filling missing values with median
-- Calculating customer metrics (total spend, transaction count)
+---
 
-### output_results(df, filepath)
-Writes processed results to CSV file. Creates output directory if needed.
+### GitHub Issue Tracking
 
-## Configuration
+Every task starts with a GitHub Issue containing:
 
-Modify these constants in `process_sales.py` to customize the pipeline:
+- Title
+- Description
+- Label
+- Assignee
 
-- `INPUT_FILE`: Path to input data file
-- `OUTPUT_FILE`: Path to output file
-- `LOG_FILE`: Path to log file
-- `MIN_AMOUNT`: Minimum transaction amount threshold
-- `CHURN_THRESHOLD_DAYS`: Customer churn threshold (for future use)
+Issues are automatically closed using:
 
-## Logging
+```
+Closes #Issue_Number
+```
 
-All pipeline operations are logged to `logs/workflow.log` with timestamps and severity levels. Check this file for debugging and audit trails.
+---
 
-## Design Principles
+# 🎯 Expected Outcome
 
-This project follows production data engineering best practices:
+StreamSight enables streaming platforms to move beyond raw viewing statistics by identifying engagement patterns that correlate with viewer retention.
 
-- **Separation of concerns**: Ingest, process, and output are separate functions
-- **Configuration at top**: All hard-coded values in one place
-- **Comprehensive logging**: Every operation is logged for debugging
-- **Error handling**: Graceful error handling with informative messages
-- **Documentation**: Complete docstrings for all functions
-- **Modularity**: Functions can be tested and reused independently
- 
-Aman Tanmay Shubhdeep 
+Using these insights, acquisition teams can:
+
+- Identify high-performing content.
+- Improve underperforming content.
+- Understand audience preferences.
+- Make informed content investment decisions.
+- Increase viewer retention through data-driven strategies.
+
+---
+
+# 👨‍💻 Team Members
+
+| Name | Role |
+|------|------|
+| **Subhadeep** | Project Lead & Backend Developer |
+| **Aman** | Data Analytics & Dashboard Developer |
+| **Tanmay** | Frontend Developer |
+
+---
+
+# 📜 License
+
+This project is developed for educational purposes as part of the **Kalvium Software Engineering Program**.
