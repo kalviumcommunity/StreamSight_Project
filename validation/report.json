@@ -1,10 +1,10 @@
 {
-    "time": "2026-07-28T11:46:06.951028",
+    "time": "2026-07-29T13:11:08.993349",
     "file": "../data/engagement_data.csv",
     "checks": {
         "file": "File exists and contains data",
         "format": "Format valid: csv",
-        "schema": "Missing columns: {'completion_rate'} | Extra columns: {'completion'}",
+        "schema": "Schema valid",
         "encoding": "Detected encoding: ascii (100%)"
     },
     "statistics": {

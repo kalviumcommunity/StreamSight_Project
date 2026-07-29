@@ -1,0 +1,21 @@
+[
+ {
+  "user_id":101,
+  "video_id":"V001",
+  "watch":{
+      "duration":1200,
+      "pause_count":2
+  },
+  "completion_rate":85
+ },
+
+ {
+  "user_id":102,
+  "video_id":"V002",
+  "watch":{
+      "duration":900,
+      "pause_count":1
+  },
+  "completion_rate":70
+ }
+]
