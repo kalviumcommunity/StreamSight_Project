@@ -1,5 +1,15 @@
 # 🎥 StreamSight
 
+# Dataset Profiling & Quality Assessment
+
+This repository documents the StreamSight assignment focused on dataset profiling and quality assessment. The project includes data validation scripts, reporting outputs, and workflow notes for monitoring data integrity throughout the pipeline.
+
+## Assignment Focus
+
+- Profile input datasets and identify schema, quality, and consistency issues.
+- Validate missing values, duplicates, and anomalies in the engagement dataset.
+- Generate actionable reports and document the workflow for team collaboration.
+
 > **Transforming Viewer Engagement into Smarter Content Decisions**
 
 StreamSight is a Python-based viewer engagement analytics platform designed to help streaming service providers understand audience behavior through data. The platform provides a simplified video streaming experience where user interactions such as watch duration, pause frequency, completion rate, and search activity are recorded and analyzed.

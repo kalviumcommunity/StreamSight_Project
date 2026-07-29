@@ -1,3 +1,7 @@
+# Dataset Profiling & Quality Assessment
+
+This workflow document outlines the GitHub collaboration process for the StreamSight assignment on branch 2.16.
+
 # Team GitHub Workflow
 
 ## Branching Strategy

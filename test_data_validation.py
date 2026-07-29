@@ -4,7 +4,7 @@ import unittest
 
 import pandas as pd
 
-from data_validation import validate_dataset, validate_file_exists, validate_schema
+from data_validation import validate_data_quality, validate_dataset, validate_file_exists, validate_schema
 
 
 class DataValidationTests(unittest.TestCase):
@@ -19,6 +19,20 @@ class DataValidationTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("Missing", message)
         self.assertIn("Extra", message)
+
+    def test_quality_validation_reports_missing_values_and_duplicates(self):
+        df = pd.DataFrame({
+            "customer_id": [1, 1, 2],
+            "transaction_date": ["2025-01-15", "2025-01-15", "2025-01-20"],
+            "amount": [150.5, 150.5, None],
+            "product_category": ["Electronics", "Electronics", "Books"],
+        })
+
+        ok, message = validate_data_quality(df)
+
+        self.assertFalse(ok)
+        self.assertIn("missing", message.lower())
+        self.assertIn("duplicate", message.lower())
 
     def test_valid_dataset_report_passes_for_sample_file(self):
         expected_columns = ["customer_id", "transaction_date", "amount", "product_category"]
