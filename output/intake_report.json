@@ -1,12 +1,13 @@
 {
-  "timestamp": "2026-07-27T15:26:20.749722",
-  "filepath": "data\\raw\\sample_data.csv",
+  "timestamp": "2026-07-29T09:08:57.913429",
+  "filepath": "data/raw/sample_data.csv",
   "valid": true,
   "checks": {
     "file_exists": "File exists and has content",
     "format": "Format valid: .csv",
-    "encoding": "Detected: utf-8 (100%)",
+    "encoding": "Detected: ascii (100%)",
     "schema": "Schema valid",
+    "quality": "Data quality check passed",
     "dimensions": "Rows: 18, Columns: 4"
   },
   "statistics": {

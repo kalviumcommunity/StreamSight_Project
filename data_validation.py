@@ -49,6 +49,22 @@ def validate_schema(df, expected_columns):
     return True, "Schema valid"
 
 
+def validate_data_quality(df):
+    missing_value_columns = [col for col in df.columns if df[col].isna().any()]
+    duplicate_rows = int(df.duplicated().sum())
+
+    issues = []
+    if missing_value_columns:
+        issues.append(f"Missing values in: {missing_value_columns}")
+    if duplicate_rows:
+        issues.append(f"Duplicate rows found: {duplicate_rows}")
+
+    if issues:
+        return False, " | ".join(issues)
+
+    return True, "Data quality check passed"
+
+
 def detect_encoding(filepath):
     path = Path(filepath)
     try:
@@ -149,6 +165,12 @@ def validate_dataset(filepath, expected_columns, allowed_extensions=None, expect
     schema_ok, schema_message = validate_schema(df, expected_columns)
     report["checks"]["schema"] = schema_message
     if not schema_ok:
+        _write_report(report, report_path)
+        return (report, None) if return_dataframe else report
+
+    quality_ok, quality_message = validate_data_quality(df)
+    report["checks"]["quality"] = quality_message
+    if not quality_ok:
         _write_report(report, report_path)
         return (report, None) if return_dataframe else report
 
