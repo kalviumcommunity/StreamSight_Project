@@ -65,6 +65,111 @@ def validate_data_quality(df):
     return True, "Data quality check passed"
 
 
+def analyze_missing_before(df):
+    """Return a summary of missing values before imputation."""
+    if df is None:
+        raise ValueError("A pandas DataFrame is required")
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("Expected a pandas DataFrame")
+
+    total_rows = len(df)
+    missing_values = {}
+    missing_percentages = {}
+
+    for column in df.columns:
+        null_count = int(df[column].isna().sum())
+        if null_count > 0:
+            missing_values[column] = null_count
+            missing_percentages[column] = round((null_count / total_rows) * 100, 2) if total_rows else 0.0
+
+    return {
+        "total_rows": total_rows,
+        "missing_values": missing_values,
+        "missing_percentages": missing_percentages,
+    }
+
+
+def _is_time_like_column(column_name, series):
+    if pd.api.types.is_datetime64_any_dtype(series):
+        return True
+
+    column_name = str(column_name).lower()
+    return any(token in column_name for token in ["date", "time", "timestamp"])
+
+
+def impute_missing_values(df, critical_columns=None, report_path=None):
+    """Impute missing values using column-appropriate strategies and return an audit trail."""
+    if df is None:
+        raise ValueError("A pandas DataFrame is required")
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("Expected a pandas DataFrame")
+
+    cleaned_df = df.copy()
+    critical_columns = critical_columns or []
+    audit_log = []
+
+    for column in critical_columns:
+        if column not in cleaned_df.columns:
+            continue
+
+        before_nulls = int(cleaned_df[column].isna().sum())
+        if before_nulls > 0:
+            cleaned_df = cleaned_df.dropna(subset=[column]).copy()
+            audit_log.append({
+                "column": column,
+                "strategy": "drop_rows",
+                "reasoning": "Critical identifier values are missing; rows cannot be reliably traced.",
+                "before_nulls": before_nulls,
+                "after_nulls": int(cleaned_df[column].isna().sum()),
+            })
+
+    for column in cleaned_df.columns:
+        if column in critical_columns:
+            continue
+
+        before_nulls = int(cleaned_df[column].isna().sum())
+        if before_nulls == 0:
+            continue
+
+        if pd.api.types.is_numeric_dtype(cleaned_df[column]):
+            fill_value = cleaned_df[column].median()
+            cleaned_df[column] = cleaned_df[column].fillna(fill_value)
+            strategy = "median"
+            reasoning = "Numerical columns use the median to reduce the impact of outliers."
+        elif _is_time_like_column(column, cleaned_df[column]):
+            cleaned_df[column] = pd.to_datetime(cleaned_df[column], errors="coerce").ffill()
+            strategy = "forward_fill"
+            reasoning = "Time-oriented columns use forward fill because the most recent known value is the best estimate for short gaps."
+        else:
+            mode_value = cleaned_df[column].mode(dropna=True)
+            if not mode_value.empty:
+                fill_value = mode_value.iloc[0]
+                cleaned_df[column] = cleaned_df[column].fillna(fill_value)
+            else:
+                cleaned_df[column] = cleaned_df[column].fillna("UNKNOWN")
+            strategy = "mode"
+            reasoning = "Categorical columns use the mode to preserve the dominant business category."
+
+        audit_log.append({
+            "column": column,
+            "strategy": strategy,
+            "reasoning": reasoning,
+            "before_nulls": before_nulls,
+            "after_nulls": int(cleaned_df[column].isna().sum()),
+        })
+
+    if report_path is not None:
+        path = Path(report_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", encoding="utf-8") as handle:
+            json.dump({
+                "summary": analyze_missing_before(df),
+                "audit_log": audit_log,
+            }, handle, indent=2, default=str)
+
+    return cleaned_df, audit_log
+
+
 def detect_encoding(filepath):
     path = Path(filepath)
     try:
