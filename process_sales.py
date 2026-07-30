@@ -5,7 +5,7 @@ from datetime import datetime
 import logging
 from pathlib import Path
 
-from data_validation import validate_dataset
+from data_validation import analyze_missing_before, impute_missing_values, validate_dataset
 
 # 2. CONFIGURATION - Hard-coded paths, settings, thresholds
 INPUT_FILE = "data/raw/sample_data.csv"
@@ -114,12 +114,26 @@ def process_data(df, min_amount=0):
     # Business rule: Small transactions may be errors or insignificant
     df = df[df['amount'] >= min_amount]
     
-    # Fill missing amounts with median
-    # Use median instead of mean to handle outliers from high-value purchases
-    if df['amount'].isna().any():
-        fill_value = df['amount'].median()
-        df['amount'].fillna(fill_value, inplace=True)
-        logging.info(f"Filled {df['amount'].isna().sum()} missing amounts with median: {fill_value:.2f}")
+    # Profile the missing values before applying any rule
+    missing_summary = analyze_missing_before(df)
+    if missing_summary["missing_values"]:
+        logging.info(f"Missing values before imputation: {missing_summary['missing_values']}")
+
+    # Apply column-aware imputation strategies and capture the audit trail
+    df, audit_log = impute_missing_values(
+        df,
+        critical_columns=['customer_id'],
+        report_path='output/missing_value_report.json',
+    )
+
+    for entry in audit_log:
+        logging.info(
+            "Imputation strategy for %s: %s (before=%s, after=%s)",
+            entry['column'],
+            entry['strategy'],
+            entry['before_nulls'],
+            entry['after_nulls'],
+        )
     
     # Convert transaction_date to datetime for analysis
     df['transaction_date'] = pd.to_datetime(df['transaction_date'])
