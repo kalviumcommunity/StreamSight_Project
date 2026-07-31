@@ -4,7 +4,13 @@ import unittest
 
 import pandas as pd
 
-from data_validation import validate_data_quality, validate_dataset, validate_file_exists, validate_schema
+from data_validation import (
+    deduplicate_records,
+    validate_data_quality,
+    validate_dataset,
+    validate_file_exists,
+    validate_schema,
+)
 
 
 class DataValidationTests(unittest.TestCase):
@@ -43,6 +49,30 @@ class DataValidationTests(unittest.TestCase):
         self.assertEqual(report["statistics"]["columns"], 4)
         self.assertIn("file_exists", report["checks"])
         self.assertIn("schema", report["checks"])
+
+    def test_deduplicate_records_logs_removed_rows_and_writes_audit(self):
+        df = pd.DataFrame(
+            {
+                "customer_id": [1, 1, 2, 2],
+                "transaction_date": ["2025-01-01", "2025-01-01", "2025-02-02", "2025-02-02"],
+                "amount": [100.0, None, 50.0, 50.0],
+                "product_category": ["Electronics", None, "Books", "Books"],
+            }
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            audit_path = os.path.join(tmpdir, "duplicate_audit.csv")
+            deduped_df, audit_log, comparison = deduplicate_records(
+                df,
+                subset=["customer_id", "transaction_date"],
+                strategy="most_complete",
+                audit_path=audit_path,
+            )
+
+            self.assertEqual(len(deduped_df), 2)
+            self.assertEqual(comparison["rows_removed"], 2)
+            self.assertEqual(len(audit_log), 2)
+            self.assertTrue(os.path.exists(audit_path))
 
 
 if __name__ == "__main__":
