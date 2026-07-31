@@ -1,4 +1,4 @@
-user_id,video_id,watch_duration,pause_count,completion_rate,timestamp
-101,V001,1200,2,85,2026-07-28
-102,V002,900,1,70,2026-07-28
-103,V003,1500,3,95,2026-07-28
+user_id,video_id,watch_duration,pause_count,completion_rate,transaction_date,amount,is_active
+101,V001,1200,2,85,2026-07-28,"$1,200.50",1
+102,V002,900,1,70,2026-07-29,"$900.00",0
+103,V003,1500,3,95,2026-07-30,"$1,500.75",1
