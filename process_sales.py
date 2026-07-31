@@ -5,7 +5,7 @@ from datetime import datetime
 import logging
 from pathlib import Path
 
-from data_validation import analyze_missing_before, impute_missing_values, validate_dataset
+from data_validation import analyze_missing_before, deduplicate_records, impute_missing_values, validate_dataset
 
 # 2. CONFIGURATION - Hard-coded paths, settings, thresholds
 INPUT_FILE = "data/raw/sample_data.csv"
@@ -106,10 +106,22 @@ def process_data(df, min_amount=0):
         raise ValueError(f"Missing required columns: {missing_cols}")
     
     rows_before = len(df)
-    
-    # Remove duplicate transactions
-    df = df.drop_duplicates()
-    
+
+    # Remove duplicate transactions while preserving the most complete record
+    df, duplicate_audit, duplicate_comparison = deduplicate_records(
+        df,
+        subset=['customer_id', 'transaction_date'],
+        strategy='most_complete',
+        audit_path='output/removed_duplicates_audit.csv',
+    )
+    if duplicate_audit:
+        logging.info(
+            "Deduplication removed %s rows (%s%%) using %s",
+            duplicate_comparison['rows_removed'],
+            duplicate_comparison['removal_pct'],
+            duplicate_comparison['strategy'],
+        )
+
     # Filter transactions below minimum amount
     # Business rule: Small transactions may be errors or insignificant
     df = df[df['amount'] >= min_amount]

@@ -65,6 +65,95 @@ def validate_data_quality(df):
     return True, "Data quality check passed"
 
 
+def deduplicate_records(df, subset=None, strategy="most_complete", audit_path=None):
+    """Remove duplicate records, preserve the best row, and write an audit trail."""
+    if df is None:
+        raise ValueError("A pandas DataFrame is required")
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("Expected a pandas DataFrame")
+
+    if strategy not in {"first", "last", "most_complete"}:
+        raise ValueError("strategy must be one of: first, last, most_complete")
+
+    if subset is None:
+        subset = list(df.columns)
+    elif isinstance(subset, str):
+        subset = [subset]
+    else:
+        subset = list(subset)
+
+    if not subset:
+        subset = list(df.columns)
+
+    missing_columns = [col for col in subset if col not in df.columns]
+    if missing_columns:
+        raise ValueError(f"Subset columns not found in DataFrame: {missing_columns}")
+
+    original_df = df.copy()
+    duplicate_mask = original_df.duplicated(subset=subset, keep=False)
+    duplicate_groups = original_df.loc[duplicate_mask]
+
+    rows_to_remove = []
+    row_keep_map = {}
+
+    for _, group in original_df.groupby(subset, dropna=False, sort=False):
+        if len(group) <= 1:
+            continue
+
+        if strategy == "first":
+            keep_idx = group.index[0]
+        elif strategy == "last":
+            keep_idx = group.index[-1]
+        else:
+            completeness = group.notna().sum(axis=1)
+            ranked_group = group.assign(_completeness=completeness).sort_values(
+                by="_completeness",
+                ascending=False,
+                kind="mergesort",
+            )
+            keep_idx = ranked_group.index[0]
+
+        for row_idx in group.index:
+            row_keep_map[row_idx] = keep_idx
+
+        rows_to_remove.extend([idx for idx in group.index if idx != keep_idx])
+
+    deduped_df = original_df.drop(index=rows_to_remove).copy()
+
+    audit_log = []
+    for row_idx in sorted(rows_to_remove):
+        audit_log.append({
+            "row_index": int(row_idx),
+            "retained_row_index": int(row_keep_map[row_idx]),
+            "strategy": strategy,
+            "duplicate_subset": subset,
+            "reason": "Removed as duplicate based on the selected key columns.",
+        })
+
+    removed_df = original_df.loc[rows_to_remove].copy()
+    if not removed_df.empty:
+        removed_df["retained_row_index"] = removed_df.index.map(row_keep_map)
+        removed_df["deduplication_strategy"] = strategy
+        removed_df["deduplication_reason"] = "Removed as duplicate based on the selected key columns."
+
+    if audit_path is not None:
+        path = Path(audit_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        removed_df.to_csv(path, index=False)
+
+    comparison = {
+        "rows_before": int(len(original_df)),
+        "rows_after": int(len(deduped_df)),
+        "rows_removed": int(len(original_df) - len(deduped_df)),
+        "removal_pct": round((len(original_df) - len(deduped_df)) / len(original_df) * 100, 2) if len(original_df) else 0.0,
+        "duplicate_groups": int(duplicate_groups.groupby(subset, dropna=False).ngroups) if not duplicate_groups.empty else 0,
+        "strategy": strategy,
+        "subset": subset,
+    }
+
+    return deduped_df, audit_log, comparison
+
+
 def analyze_missing_before(df):
     """Return a summary of missing values before imputation."""
     if df is None:
