@@ -71,6 +71,9 @@ def enforce_types(df):
             0: False,
             1: True
         })
+        if df["is_active"].isna().any():
+         raise ValueError("is_active contains values other than 0 or 1")
+
 
         print("✓ is_active converted to boolean")
 
