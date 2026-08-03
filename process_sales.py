@@ -148,7 +148,14 @@ def process_data(df, min_amount=0):
         )
     
     # Convert transaction_date to datetime for analysis
-    df['transaction_date'] = pd.to_datetime(df['transaction_date'])
+    df['transaction_date'] = pd.to_datetime(df['transaction_date'], errors='coerce')
+
+    # Extract time-based features that enable downstream aggregation and recency analysis
+    df['day_of_week'] = df['transaction_date'].dt.day_name()
+    df['dow_numeric'] = df['transaction_date'].dt.dayofweek
+    df['hour_of_day'] = df['transaction_date'].dt.hour
+    df['week_number'] = df['transaction_date'].dt.isocalendar().week.astype('Int64')
+    df['days_since_purchase'] = (pd.Timestamp.now().normalize() - df['transaction_date'].dt.normalize()).dt.days
     
     # Calculate customer metrics
     # These metrics help identify high-value customers for targeting
