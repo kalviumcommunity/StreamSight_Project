@@ -197,21 +197,6 @@ def impute_missing_values(df, critical_columns=None, report_path=None):
     critical_columns = critical_columns or []
     audit_log = []
 
-    for column in critical_columns:
-        if column not in cleaned_df.columns:
-            continue
-
-        before_nulls = int(cleaned_df[column].isna().sum())
-        if before_nulls > 0:
-            cleaned_df = cleaned_df.dropna(subset=[column]).copy()
-            audit_log.append({
-                "column": column,
-                "strategy": "drop_rows",
-                "reasoning": "Critical identifier values are missing; rows cannot be reliably traced.",
-                "before_nulls": before_nulls,
-                "after_nulls": int(cleaned_df[column].isna().sum()),
-            })
-
     for column in cleaned_df.columns:
         if column in critical_columns:
             continue
@@ -246,6 +231,21 @@ def impute_missing_values(df, critical_columns=None, report_path=None):
             "before_nulls": before_nulls,
             "after_nulls": int(cleaned_df[column].isna().sum()),
         })
+
+    for column in critical_columns:
+        if column not in cleaned_df.columns:
+            continue
+
+        before_nulls = int(cleaned_df[column].isna().sum())
+        if before_nulls > 0:
+            cleaned_df = cleaned_df.dropna(subset=[column]).copy()
+            audit_log.append({
+                "column": column,
+                "strategy": "drop_rows",
+                "reasoning": "Critical identifier values are missing; rows cannot be reliably traced.",
+                "before_nulls": before_nulls,
+                "after_nulls": int(cleaned_df[column].isna().sum()),
+            })
 
     if report_path is not None:
         path = Path(report_path)

@@ -1,6 +1,7 @@
 import pandas as pd
 
 from data_validation import analyze_missing_before, impute_missing_values
+from process_sales import process_data
 
 
 def test_analyze_missing_before_reports_null_summary():
@@ -41,3 +42,24 @@ def test_impute_missing_values_applies_strategy_per_column():
     assert any(entry["strategy"] == "median" for entry in audit_log)
     assert any(entry["strategy"] == "mode" for entry in audit_log)
     assert any(entry["strategy"] == "forward_fill" for entry in audit_log)
+
+
+def test_process_data_adds_temporal_features():
+    df = pd.DataFrame(
+        {
+            "customer_id": [1, 2],
+            "transaction_date": ["2025-01-15", "2025-01-16"],
+            "amount": [100.0, 80.0],
+            "product_category": ["Electronics", "Books"],
+        }
+    )
+
+    processed_df = process_data(df, min_amount=0)
+
+    assert "day_of_week" in processed_df.columns
+    assert "hour_of_day" in processed_df.columns
+    assert "week_number" in processed_df.columns
+    assert "days_since_purchase" in processed_df.columns
+    assert processed_df.loc[0, "day_of_week"] == "Wednesday"
+    assert processed_df.loc[0, "hour_of_day"] == 0
+    assert processed_df.loc[0, "dow_numeric"] == 2
