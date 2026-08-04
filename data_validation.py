@@ -376,6 +376,91 @@ def validate_dataset(filepath, expected_columns, allowed_extensions=None, expect
     return (report, df) if return_dataframe else report
 
 
+def detect_outliers_zscore(df, column, threshold=3.0):
+    if column not in df.columns:
+        raise ValueError(f"Column not found in DataFrame: {column}")
+    if not pd.api.types.is_numeric_dtype(df[column]):
+        raise TypeError(f"Z-score outlier detection requires numeric data: {column}")
+
+    series = df[column].astype(float)
+    std = series.std(ddof=0)
+    if std == 0 or series.empty:
+        return pd.Series(False, index=df.index)
+
+    z_scores = np.abs((series - series.mean()) / std)
+    return z_scores > threshold
+
+
+def detect_outliers_iqr(df, column, factor=1.5):
+    if column not in df.columns:
+        raise ValueError(f"Column not found in DataFrame: {column}")
+    if not pd.api.types.is_numeric_dtype(df[column]):
+        raise TypeError(f"IQR outlier detection requires numeric data: {column}")
+
+    series = df[column].dropna().astype(float)
+    q1 = series.quantile(0.25)
+    q3 = series.quantile(0.75)
+    iqr = q3 - q1
+    lower_bound = q1 - factor * iqr
+    upper_bound = q3 + factor * iqr
+
+    return (df[column] < lower_bound) | (df[column] > upper_bound)
+
+
+def handle_outliers(df, column, action="flag", strategy="iqr", threshold=3.0, factor=1.5, report_path=None):
+    if action not in {"cap", "remove", "flag"}:
+        raise ValueError("action must be one of: cap, remove, flag")
+    if strategy not in {"iqr", "zscore"}:
+        raise ValueError("strategy must be one of: iqr, zscore")
+
+    if strategy == "zscore":
+        outlier_mask = detect_outliers_zscore(df, column, threshold=threshold)
+    else:
+        outlier_mask = detect_outliers_iqr(df, column, factor=factor)
+
+    lower_bound = None
+    upper_bound = None
+    if strategy == "iqr":
+        series = df[column].dropna().astype(float)
+        q1 = series.quantile(0.25)
+        q3 = series.quantile(0.75)
+        iqr = q3 - q1
+        lower_bound = q1 - factor * iqr
+        upper_bound = q3 + factor * iqr
+    else:
+        series = df[column].astype(float)
+        std = series.std(ddof=0)
+        lower_bound = series.mean() - threshold * std
+        upper_bound = series.mean() + threshold * std
+
+    cleaned_df = df.copy()
+    audit_entry = {
+        "column": column,
+        "strategy": strategy,
+        "action": action,
+        "outlier_count": int(outlier_mask.sum()),
+        "lower_bound": lower_bound,
+        "upper_bound": upper_bound,
+        "reasoning": "Detected outliers using statistical bounds and handled them according to the specified strategy.",
+    }
+
+    if action == "cap":
+        cleaned_df[f"is_{column}_outlier"] = outlier_mask.astype(int)
+        cleaned_df[f"{column}_capped"] = cleaned_df[column].clip(lower=lower_bound, upper=upper_bound)
+    elif action == "remove":
+        cleaned_df = cleaned_df.loc[~outlier_mask].copy()
+    else:
+        cleaned_df[f"is_{column}_outlier"] = outlier_mask.astype(int)
+
+    if report_path is not None:
+        path = Path(report_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", encoding="utf-8") as handle:
+            json.dump({"outlier_audit": audit_entry}, handle, indent=2, default=str)
+
+    return cleaned_df, [audit_entry]
+
+
 def _write_report(report, report_path):
     path = Path(report_path)
     path.parent.mkdir(parents=True, exist_ok=True)
