@@ -5,7 +5,7 @@ from datetime import datetime
 import logging
 from pathlib import Path
 
-from data_validation import analyze_missing_before, deduplicate_records, impute_missing_values, validate_dataset
+from data_validation import analyze_missing_before, deduplicate_records, handle_outliers, impute_missing_values, validate_dataset
 
 # 2. CONFIGURATION - Hard-coded paths, settings, thresholds
 INPUT_FILE = "data/raw/sample_data.csv"
@@ -145,6 +145,24 @@ def process_data(df, min_amount=0):
             entry['strategy'],
             entry['before_nulls'],
             entry['after_nulls'],
+        )
+
+    df, outlier_audit = handle_outliers(
+        df,
+        column='amount',
+        action='cap',
+        strategy='iqr',
+        factor=1.5,
+        report_path='output/outlier_detection_report.json',
+    )
+
+    for entry in outlier_audit:
+        logging.info(
+            "Outlier handling for %s: %s count=%s action=%s",
+            entry['column'],
+            entry['strategy'],
+            entry['outlier_count'],
+            entry['action'],
         )
     
     # Convert transaction_date to datetime for analysis
