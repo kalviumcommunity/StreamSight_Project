@@ -3,11 +3,15 @@ import os
 
 
 # Create output directory
+
+
 os.makedirs("output", exist_ok=True)
 
 
 # Load data
 df = pd.read_csv(
+
+    
     "data/engagement_data.csv"
 )
 
