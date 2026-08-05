@@ -27,6 +27,29 @@ df["transaction_date"] = pd.to_datetime(
 )
 
 
+# Optional feature engineering utilities (safe no-op if columns missing)
+try:
+    from feature_engineering import (
+        transactions_per_month,
+        avg_spend_per_transaction,
+        lifetime_value_per_month,
+        engagement_bin,
+        spend_tier_quantile,
+        compute_rfm,
+    )
+except Exception:
+    transactions_per_month = None
+
+
+# Example: compute common ratio features only when source columns exist
+if transactions_per_month is not None and {'total_transactions', 'days_as_customer'}.issubset(df.columns):
+    df['transactions_per_month'] = transactions_per_month(df)
+
+if transactions_per_month is not None and {'total_spent', 'total_transactions'}.issubset(df.columns):
+    df['avg_spend_per_transaction'] = avg_spend_per_transaction(df)
+
+
+
 # ==============================
 # VALIDATION RULES
 # ==============================
