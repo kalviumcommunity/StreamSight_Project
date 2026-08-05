@@ -2,6 +2,7 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime
+import time
 import logging
 from pathlib import Path
 
@@ -187,6 +188,82 @@ def process_data(df, min_amount=0):
     
     # Merge metrics back to original data
     df = df.merge(customer_metrics, on='customer_id', how='left')
+    
+    # ------------------------------
+    # NumPy vectorized feature engineering
+    # ------------------------------
+    # Min-max normalization for transaction-level `amount`
+    try:
+        revenue_array = df['amount'].values.astype(float)
+        r_min = revenue_array.min()
+        r_max = revenue_array.max()
+        if r_max - r_min == 0:
+            df['amount_normalized'] = 0.0
+        else:
+            df['amount_normalized'] = (revenue_array - r_min) / (r_max - r_min)
+
+        # Z-score normalization for `amount`
+        r_mean = revenue_array.mean()
+        r_std = revenue_array.std()
+        if r_std == 0:
+            df['amount_zscore'] = 0.0
+        else:
+            df['amount_zscore'] = (revenue_array - r_mean) / r_std
+
+        # Rank customers/transactions by `amount` (1 = highest)
+        order = np.argsort(-revenue_array)
+        ranks = np.empty(len(revenue_array), dtype=int)
+        ranks[order] = np.arange(1, len(revenue_array) + 1)
+        df['amount_rank'] = ranks
+    except Exception:
+        # If column missing or conversion fails, skip silently (upstream validations exist)
+        pass
+
+    # Vectorize same set of calculations for per-customer `total_spend` if available
+    if 'total_spend' in df.columns:
+        try:
+            total_array = df['total_spend'].values.astype(float)
+            t_min, t_max = total_array.min(), total_array.max()
+            if t_max - t_min == 0:
+                df['total_spend_normalized'] = 0.0
+            else:
+                df['total_spend_normalized'] = (total_array - t_min) / (t_max - t_min)
+
+            t_mean, t_std = total_array.mean(), total_array.std()
+            if t_std == 0:
+                df['total_spend_zscore'] = 0.0
+            else:
+                df['total_spend_zscore'] = (total_array - t_mean) / t_std
+
+            order_t = np.argsort(-total_array)
+            ranks_t = np.empty(len(total_array), dtype=int)
+            ranks_t[order_t] = np.arange(1, len(total_array) + 1)
+            df['total_spend_rank'] = ranks_t
+        except Exception:
+            pass
+
+    # Quick performance comparison helper (loop vs NumPy)
+    def _timing_demo(series: pd.Series) -> dict:
+        a = series.values.astype(float)
+        start = time.time()
+        # loop version
+        tmp = []
+        for v in series:
+            tmp.append(v * 1.1)
+        loop_time = time.time() - start
+
+        start = time.time()
+        _ = a * 1.1
+        np_time = time.time() - start
+
+        speedup = float('inf') if np_time == 0 else loop_time / np_time
+        return {"loop": loop_time, "numpy": np_time, "speedup": speedup}
+
+    try:
+        perf = _timing_demo(df['amount'])
+        logging.info("Normalization timing - loop: %.6fs, numpy: %.6fs, speedup: %.1fx", perf['loop'], perf['numpy'], perf['speedup'])
+    except Exception:
+        pass
     
     rows_after = len(df)
     logging.info(f"Processing: {rows_before} rows → {rows_after} rows")
