@@ -1,0 +1,8 @@
+user_id,video_id,watch_duration,pause_count,completion_rate,transaction_date,amount,valid_user_id,valid_video_id,valid_watch_duration,valid_pause_count,valid_completion_rate,valid_amount,valid_transaction_date,passes_all_checks
+104.0,V004,-500,2,80,2026-07-31,500.0,True,True,False,True,True,True,True,False
+105.0,V005,1000,-2,75,2026-07-31,700.0,True,True,True,False,True,True,True,False
+106.0,V006,800,1,150,2026-07-31,800.0,True,True,True,True,False,True,True,False
+,V007,900,1,70,2026-07-31,900.0,False,True,True,True,True,True,True,False
+107.0,,900,1,70,2026-07-31,900.0,True,False,True,True,True,True,True,False
+108.0,V008,900,1,80,2050-01-01,900.0,True,True,True,True,True,True,False,False
+109.0,V009,900,1,85,2026-07-31,-500.0,True,True,True,True,True,False,True,False

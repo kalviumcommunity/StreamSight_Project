@@ -1,4 +1,11 @@
-user_id,video_id,watch_duration,pause_count,completion_rate,transaction_date,amount,is_active,viewer_name,category,segment,city
-101,V001,1200,2,85,2026-07-28,"$1,200.50",1," John "," MOVIES ","b2b","São Paulo"
-102,V002,900,1,70,2026-07-29,"$900.00",0,"JOHN","movies","B 2 B","Montréal"
-103,V003,1500,3,95,2026-07-30,"$1,500.75",1,"john ","Movies ","business-to-business","New York"
+user_id,video_id,watch_duration,pause_count,completion_rate,transaction_date,amount
+101,V001,1200,2,85,2026-07-28,1200.50
+102,V002,900,1,70,2026-07-29,900.00
+103,V003,1500,3,95,2026-07-30,1500.75
+104,V004,-500,2,80,2026-07-31,500.00
+105,V005,1000,-2,75,2026-07-31,700.00
+106,V006,800,1,150,2026-07-31,800.00
+,V007,900,1,70,2026-07-31,900.00
+107,,900,1,70,2026-07-31,900.00
+108,V008,900,1,80,2050-01-01,900.00
+109,V009,900,1,85,2026-07-31,-500.00
