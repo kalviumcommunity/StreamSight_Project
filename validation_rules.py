@@ -165,3 +165,21 @@ for column in validation_cols:
 print("\nOutput files created:")
 print("- output/validation_failures.csv")
 print("- output/validated_engagement_data.csv")
+
+# Optional segment aggregation insights
+try:
+    from segment_analysis import build_segment_summary, build_pivot_table, write_segment_insights
+except Exception:
+    build_segment_summary = None
+
+if build_segment_summary is not None:
+    try:
+        # Use a best-effort approach: if the cleaned data has the expected business columns,
+        # create segment summary and pivot insights.
+        if {'customer_type', 'product_category', 'amount', 'customer_id'}.issubset(clean_data.columns):
+            write_segment_insights(clean_data, output_path='output/segment_insights.txt')
+            print("Segment insights written to output/segment_insights.txt")
+        else:
+            print("Segment insights skipped: expected business columns are missing")
+    except Exception as exc:
+        print(f"Segment insights skipped: {exc}")
