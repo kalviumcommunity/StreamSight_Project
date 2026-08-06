@@ -174,8 +174,6 @@ except Exception:
 
 if build_segment_summary is not None:
     try:
-        # Use a best-effort approach: if the cleaned data has the expected business columns,
-        # create segment summary and pivot insights.
         if {'customer_type', 'product_category', 'amount', 'customer_id'}.issubset(clean_data.columns):
             write_segment_insights(clean_data, output_path='output/segment_insights.txt')
             print("Segment insights written to output/segment_insights.txt")
@@ -183,3 +181,21 @@ if build_segment_summary is not None:
             print("Segment insights skipped: expected business columns are missing")
     except Exception as exc:
         print(f"Segment insights skipped: {exc}")
+
+# Optional time-series trend analysis
+try:
+    from time_series_analysis import build_time_series_features, plot_time_series, write_time_series_summary
+except Exception:
+    build_time_series_features = None
+
+if build_time_series_features is not None:
+    try:
+        if {'transaction_date', 'amount'}.issubset(clean_data.columns):
+            ts_df = build_time_series_features(clean_data)
+            plot_time_series(ts_df, output_path='output/time_series_trend.png')
+            write_time_series_summary(ts_df, output_path='output/time_series_summary.txt')
+            print("Time-series trends written to output/time_series_trend.png and output/time_series_summary.txt")
+        else:
+            print("Time-series analysis skipped: expected date/value columns are missing")
+    except Exception as exc:
+        print(f"Time-series analysis skipped: {exc}")
