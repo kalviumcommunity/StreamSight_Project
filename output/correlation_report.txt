@@ -1,0 +1,26 @@
+
+
+StreamSight Correlation Analysis Report
+
+Purpose:
+Identify relationships between viewer engagement metrics.
+
+Findings:
+
+1. Watch Duration:
+Higher watch duration generally indicates stronger viewer engagement.
+
+2. Completion Rate:
+Completion rate is used as a retention indicator.
+
+3. Pause Frequency:
+High pause counts may indicate lower engagement.
+
+Important:
+Correlation does not prove causation.
+
+A strong correlation means two metrics move together.
+It does not mean one metric directly causes another.
+
+Business teams should investigate further before making decisions.
+
