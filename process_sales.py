@@ -5,7 +5,7 @@ from datetime import datetime
 import logging
 from pathlib import Path
 
-from data_validation import analyze_missing_before, deduplicate_records, handle_outliers, impute_missing_values, validate_dataset
+from data_validation import analyze_missing_before, deduplicate_records, handle_outliers, impute_missing_values, validate_dataset, validate_merge
 
 # 2. CONFIGURATION - Hard-coded paths, settings, thresholds
 INPUT_FILE = "data/raw/sample_data.csv"
@@ -185,14 +185,88 @@ def process_data(df, min_amount=0):
     customer_metrics.columns = ['customer_id', 'total_spend', 'transaction_count', 
                                  'first_purchase', 'last_purchase']
     
-    # Merge metrics back to original data
-    df = df.merge(customer_metrics, on='customer_id', how='left')
-    
+    # Validate the join explicitly before merging
+    merged_df, merge_report = validate_merge(
+        df,
+        customer_metrics,
+        on='customer_id',
+        how='left',
+        output_unmatched_left='output/unmatched_customers.csv',
+        output_unmatched_right='output/unmatched_customer_metrics.csv',
+        report_path='output/join_validation_report.json',
+    )
+
+    logging.info(
+        "Join validation report: left_rows=%s right_rows=%s merged_rows=%s unmatched_left_rows=%s unmatched_right_rows=%s",
+        merge_report['left_rows'],
+        merge_report['right_rows'],
+        merge_report['merged_rows'],
+        merge_report['unmatched_left_rows'],
+        merge_report['unmatched_right_rows'],
+    )
+
+    df = merged_df
     rows_after = len(df)
     logging.info(f"Processing: {rows_before} rows → {rows_after} rows")
     logging.info(f"Unique customers: {df['customer_id'].nunique()}")
     
     return df
+
+
+def build_segment_insights(df, value_column='amount', segment_column='product_category', time_column='day_of_week'):
+    """
+    Build grouped segment insights using split-apply-combine aggregation.
+
+    The function summarizes revenue by segment and time-based dimension, ranks
+    segments by total revenue, and returns a pivot table for quick comparison.
+
+    Args:
+        df (pd.DataFrame): Processed sales data
+        value_column (str): Numeric column to aggregate
+        segment_column (str): Column used as the segment key
+        time_column (str): Column used as the secondary grouping dimension
+
+    Returns:
+        tuple[pd.DataFrame, pd.DataFrame]: Ranked metrics and pivot table
+    """
+    if df.empty:
+        raise ValueError("Input DataFrame cannot be empty")
+
+    required_columns = [segment_column, value_column]
+    missing_cols = [col for col in required_columns if col not in df.columns]
+    if missing_cols:
+        raise ValueError(f"Missing required columns for insights: {missing_cols}")
+
+    if time_column not in df.columns:
+        if 'transaction_date' in df.columns:
+            df = df.copy()
+            df[time_column] = pd.to_datetime(df['transaction_date'], errors='coerce').dt.day_name()
+        else:
+            raise ValueError(f"Missing required column for insights: {time_column}")
+
+    metrics_df = (
+        df.groupby([segment_column, time_column], dropna=False)
+        .agg(
+            total_revenue=(value_column, 'sum'),
+            transaction_count=(value_column, 'count'),
+            avg_order_value=(value_column, 'mean'),
+        )
+        .reset_index()
+    )
+
+    metrics_df['revenue_rank'] = metrics_df['total_revenue'].rank(method='dense', ascending=False).astype(int)
+    metrics_df = metrics_df.sort_values(['revenue_rank', 'total_revenue'], ascending=[True, False]).reset_index(drop=True)
+
+    pivot_df = pd.pivot_table(
+        df,
+        values=value_column,
+        index=segment_column,
+        columns=time_column,
+        aggfunc='sum',
+        fill_value=0,
+    )
+
+    return metrics_df, pivot_df
 
 
 def output_results(df, filepath):
@@ -254,7 +328,14 @@ if __name__ == "__main__":
         print(f"  ✓ Processed {len(clean_data)} transactions")
         print(f"  ✓ {clean_data['customer_id'].nunique()} unique customers")
         
-        print("\nStep 3: Outputting results...")
+        print("\nStep 3: Generating segment insights...")
+        segment_metrics, segment_pivot = build_segment_insights(clean_data)
+        segment_metrics.to_csv('output/segment_insights.csv', index=False)
+        segment_pivot.to_csv('output/segment_pivot.csv')
+        print("  ✓ Segment metrics saved to output/segment_insights.csv")
+        print("  ✓ Segment pivot table saved to output/segment_pivot.csv")
+        
+        print("\nStep 4: Outputting results...")
         output_results(clean_data, OUTPUT_FILE)
         
         print("\n" + "=" * 50)

@@ -1,7 +1,7 @@
 import pandas as pd
 
 from data_validation import analyze_missing_before, impute_missing_values
-from process_sales import process_data
+from process_sales import build_segment_insights, process_data
 
 
 def test_analyze_missing_before_reports_null_summary():
@@ -63,3 +63,57 @@ def test_process_data_adds_temporal_features():
     assert processed_df.loc[0, "day_of_week"] == "Wednesday"
     assert processed_df.loc[0, "hour_of_day"] == 0
     assert processed_df.loc[0, "dow_numeric"] == 2
+
+
+def test_validate_merge_reports_unmatched_rows_for_left_join():
+    from data_validation import validate_merge
+
+    left = pd.DataFrame(
+        {
+            "customer_id": [1, 2, 3],
+            "amount": [100.0, 200.0, 300.0],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "customer_id": [2, 3, 4],
+            "product_category": ["Books", "Electronics", "Clothing"],
+        }
+    )
+
+    merged_df, report = validate_merge(
+        left,
+        right,
+        on="customer_id",
+        how="left",
+        output_unmatched_left="output/test_unmatched_left.csv",
+        output_unmatched_right="output/test_unmatched_right.csv",
+    )
+
+    assert len(merged_df) == 3
+    assert report["left_rows"] == 3
+    assert report["right_rows"] == 3
+    assert report["merged_rows"] == 3
+    assert report["unmatched_left_rows"] == 1
+    assert report["unmatched_right_rows"] == 1
+    assert report["join_type"] == "left"
+
+
+def test_build_segment_insights_creates_ranked_summary_and_pivot():
+    df = pd.DataFrame(
+        {
+            "customer_id": [1, 1, 2, 2, 3],
+            "amount": [100.0, 50.0, 200.0, 100.0, 150.0],
+            "product_category": ["Electronics", "Books", "Electronics", "Books", "Electronics"],
+            "day_of_week": ["Wednesday", "Wednesday", "Monday", "Monday", "Wednesday"],
+        }
+    )
+
+    segment_metrics, pivot = build_segment_insights(df)
+
+    assert "total_revenue" in segment_metrics.columns
+    assert "avg_order_value" in segment_metrics.columns
+    assert "revenue_rank" in segment_metrics.columns
+    assert segment_metrics.loc[segment_metrics["product_category"] == "Electronics", "total_revenue"].iloc[0] == 250.0
+    assert pivot.loc["Electronics", "Wednesday"] == 250.0
+    assert segment_metrics["revenue_rank"].min() == 1
