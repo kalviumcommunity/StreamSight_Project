@@ -199,3 +199,16 @@ if build_time_series_features is not None:
             print("Time-series analysis skipped: expected date/value columns are missing")
     except Exception as exc:
         print(f"Time-series analysis skipped: {exc}")
+
+# Optional root cause investigation report
+try:
+    from root_cause_analysis import write_investigation_report
+except Exception:
+    write_investigation_report = None
+
+if write_investigation_report is not None:
+    try:
+        report_path = write_investigation_report(clean_data, output_path='output/root_cause_report.txt')
+        print(f"Root cause report written to {report_path}")
+    except Exception as exc:
+        print(f"Root cause report skipped: {exc}")
