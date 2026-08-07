@@ -1,0 +1,1 @@
+customer_id,transaction_date,amount,product_category,is_amount_outlier,amount_capped,day_of_week,dow_numeric,hour_of_day,week_number,days_since_purchase,total_spend,transaction_count,first_purchase,last_purchase,_merge
