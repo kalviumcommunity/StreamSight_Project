@@ -1,0 +1,15 @@
+Segment Insights Report
+======================
+
+Top segments by total value:
+customer_type  total_value  record_count   avg_value  value_rank
+   Enterprise      4701.25             4 1175.312500           1
+          SMB      2500.00             3  833.333333           2
+      Startup      1950.00             3  650.000000           3
+
+Pivot table by segment and product:
+product_category   Movies  Series
+customer_type                    
+Enterprise        2701.25  2000.0
+SMB               1600.00   900.0
+Startup            650.00  1300.0
