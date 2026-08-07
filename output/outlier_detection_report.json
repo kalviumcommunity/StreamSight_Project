@@ -1,0 +1,11 @@
+{
+  "outlier_audit": {
+    "column": "amount",
+    "strategy": "iqr",
+    "action": "cap",
+    "outlier_count": 0,
+    "lower_bound": 70.0,
+    "upper_bound": 110.0,
+    "reasoning": "Detected outliers using statistical bounds and handled them according to the specified strategy."
+  }
+}

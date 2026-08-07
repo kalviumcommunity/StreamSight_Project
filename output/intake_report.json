@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-08-03T10:13:43.401474",
-  "filepath": "data\\raw\\sample_data.csv",
+  "timestamp": "2026-08-06T09:57:33.615001",
+  "filepath": "data/raw/sample_data.csv",
   "valid": true,
   "checks": {
     "file_exists": "File exists and has content",
