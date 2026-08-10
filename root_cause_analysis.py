@@ -1,7 +1,66 @@
 import os
 import pandas as pd
+import numpy as np
 
 os.makedirs('output', exist_ok=True)
+
+
+def check_threshold_alerts(metrics, rules):
+    """Alert when key metrics fall outside configured thresholds."""
+    alerts = []
+    for metric_name, rule in rules.items():
+        value = metrics.get(metric_name)
+        if value is None:
+            continue
+        if value < rule.get('min', float('-inf')):
+            alerts.append(f"⚠️ {metric_name} BELOW MIN: {value} < {rule['min']}")
+        elif value > rule.get('max', float('inf')):
+            alerts.append(f"⚠️ {metric_name} ABOVE MAX: {value} > {rule['max']}")
+    return alerts
+
+
+def detect_anomalies_zscore(series, threshold=2.0):
+    """Flag values beyond N standard deviations from the rolling mean."""
+    if series is None or series.empty:
+        return pd.Series(dtype=float)
+
+    mean = series.mean()
+    std = series.std()
+    if pd.isna(std) or std == 0:
+        return pd.Series(dtype=float)
+
+    z_scores = np.abs((series - mean) / std)
+    return series[z_scores > threshold]
+
+
+def build_anomaly_report(series, metric_name='daily_revenue', threshold=2.0):
+    """Create a structured anomaly report for monitoring and alerting."""
+    anomalies = detect_anomalies_zscore(series, threshold=threshold)
+    if anomalies.empty:
+        return {
+            'metric_name': metric_name,
+            'anomaly_count': 0,
+            'severity': 'low',
+            'anomalies': [],
+        }
+
+    mean = series.mean()
+    std = series.std()
+    anomaly_details = []
+    for timestamp, value in anomalies.items():
+        anomaly_details.append({
+            'timestamp': timestamp,
+            'value': float(value),
+            'expected_range': f"{mean - 2 * std:.2f}-{mean + 2 * std:.2f}",
+            'severity': 'high' if abs(value - mean) > 3 * std else 'medium',
+        })
+
+    return {
+        'metric_name': metric_name,
+        'anomaly_count': len(anomaly_details),
+        'severity': 'high' if anomaly_details else 'low',
+        'anomalies': anomaly_details,
+    }
 
 
 def investigate_anomaly(df: pd.DataFrame, date_col='transaction_date', value_col='amount', status_col='status', segment_col='payment_method', success_value='completed'):
