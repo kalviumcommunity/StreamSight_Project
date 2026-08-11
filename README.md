@@ -199,6 +199,8 @@ The dashboard provides valuable insights including:
   - `refactor/<module>`
   - `chore/<task>`
 
+> Note: This branch includes a small documentation update to enable PR creation.
+
 ---
 
 ### Commit Message Convention
