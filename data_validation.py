@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 try:
@@ -319,6 +320,62 @@ def capture_stats(filepath, df):
         "columns": len(df.columns),
         "file_size_mb": round(Path(filepath).stat().st_size / (1024 * 1024), 3),
     }
+
+
+def validate_merge(left, right, on=None, how="left", output_unmatched_left=None, output_unmatched_right=None, report_path="output/join_validation_report.json"):
+    """Validate a merge operation and return a merged DataFrame plus a summary report."""
+    if not isinstance(left, pd.DataFrame) or not isinstance(right, pd.DataFrame):
+        raise TypeError("left and right must both be pandas DataFrame objects")
+
+    if on is None:
+        raise ValueError("The 'on' parameter must be provided")
+
+    if isinstance(on, str):
+        join_keys = [on]
+    else:
+        join_keys = list(on)
+
+    missing_left = [key for key in join_keys if key not in left.columns]
+    missing_right = [key for key in join_keys if key not in right.columns]
+    if missing_left or missing_right:
+        raise ValueError(f"Join keys missing: left={missing_left}, right={missing_right}")
+
+    merged_df = left.merge(right, on=join_keys, how=how, indicator=True)
+    left_rows = len(left)
+    right_rows = len(right)
+    merged_rows = len(merged_df)
+
+    left_key_df = left[join_keys].drop_duplicates()
+    right_key_df = right[join_keys].drop_duplicates()
+
+    left_match = left_key_df.merge(right_key_df, on=join_keys, how="left", indicator=True)
+    unmatched_left = int((left_match["_merge"] == "left_only").sum())
+
+    right_match = right_key_df.merge(left_key_df, on=join_keys, how="left", indicator=True)
+    unmatched_right = int((right_match["_merge"] == "left_only").sum())
+
+    if output_unmatched_left is not None and unmatched_left:
+        unmatched_left_df = merged_df.loc[merged_df["_merge"] == "left_only", left.columns].copy()
+        unmatched_left_df.to_csv(output_unmatched_left, index=False)
+
+    if output_unmatched_right is not None and unmatched_right:
+        unmatched_right_df = merged_df.loc[merged_df["_merge"] == "right_only", right.columns].copy()
+        unmatched_right_df.to_csv(output_unmatched_right, index=False)
+
+    report = {
+        "join_type": how,
+        "left_rows": left_rows,
+        "right_rows": right_rows,
+        "merged_rows": merged_rows,
+        "unmatched_left_rows": unmatched_left,
+        "unmatched_right_rows": unmatched_right,
+        "valid": True,
+    }
+
+    if report_path is not None:
+        _write_report(report, report_path)
+
+    return merged_df, report
 
 
 def validate_dataset(filepath, expected_columns, allowed_extensions=None, expected_encoding="utf-8", report_path="output/intake_report.json", return_dataframe=False):

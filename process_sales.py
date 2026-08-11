@@ -286,11 +286,11 @@ def process_data(df, min_amount=0):
         logging.info("Normalization timing - loop: %.6fs, numpy: %.6fs, speedup: %.1fx", perf['loop'], perf['numpy'], perf['speedup'])
     except Exception:
         pass
-    
-     rows_after = len(df)
+
+    rows_after = len(df)
     logging.info(f"Processing: {rows_before} rows → {rows_after} rows")
     logging.info(f"Unique customers: {df['customer_id'].nunique()}")
-    
+
     return df
 
 
