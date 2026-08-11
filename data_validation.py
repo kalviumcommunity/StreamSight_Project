@@ -348,28 +348,73 @@ def validate_merge(left, right, on=None, how="left", output_unmatched_left=None,
     left_key_df = left[join_keys].drop_duplicates()
     right_key_df = right[join_keys].drop_duplicates()
 
+    left_distinct_keys = len(left_key_df)
+    right_distinct_keys = len(right_key_df)
+    merged_distinct_keys = len(merged_df[join_keys].drop_duplicates())
+
+    left_duplicate_key_rows = left_rows - left_distinct_keys
+    right_duplicate_key_rows = right_rows - right_distinct_keys
+
     left_match = left_key_df.merge(right_key_df, on=join_keys, how="left", indicator=True)
-    unmatched_left = int((left_match["_merge"] == "left_only").sum())
+    unmatched_left_keys = left_match.loc[left_match["_merge"] == "left_only", join_keys].drop(columns=["_merge"])
+    unmatched_left = int(len(unmatched_left_keys))
 
     right_match = right_key_df.merge(left_key_df, on=join_keys, how="left", indicator=True)
-    unmatched_right = int((right_match["_merge"] == "left_only").sum())
+    unmatched_right_keys = right_match.loc[right_match["_merge"] == "left_only", join_keys].drop(columns=["_merge"])
+    unmatched_right = int(len(unmatched_right_keys))
 
     if output_unmatched_left is not None and unmatched_left:
-        unmatched_left_df = merged_df.loc[merged_df["_merge"] == "left_only", left.columns].copy()
-        unmatched_left_df.to_csv(output_unmatched_left, index=False)
+        path = Path(output_unmatched_left)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        unmatched_left_df = left.merge(unmatched_left_keys, on=join_keys, how="inner")
+        unmatched_left_df.to_csv(path, index=False)
 
     if output_unmatched_right is not None and unmatched_right:
-        unmatched_right_df = merged_df.loc[merged_df["_merge"] == "right_only", right.columns].copy()
-        unmatched_right_df.to_csv(output_unmatched_right, index=False)
+        path = Path(output_unmatched_right)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        unmatched_right_df = right.merge(unmatched_right_keys, on=join_keys, how="inner")
+        unmatched_right_df.to_csv(path, index=False)
+
+    if left_duplicate_key_rows > 0 and right_duplicate_key_rows > 0:
+        join_cardinality = "many-to-many"
+    elif left_duplicate_key_rows > 0:
+        join_cardinality = "many-to-one"
+    elif right_duplicate_key_rows > 0:
+        join_cardinality = "one-to-many"
+    else:
+        join_cardinality = "one-to-one"
+
+    validation_issues = []
+    if how == "left" and merged_rows < left_rows:
+        validation_issues.append("Left join returned fewer rows than left input, which is unexpected.")
+    if how == "right" and merged_rows < right_rows:
+        validation_issues.append("Right join returned fewer rows than right input, which is unexpected.")
+    if how == "outer" and merged_rows < max(left_rows, right_rows):
+        validation_issues.append("Outer join returned fewer rows than expected for a full outer join.")
 
     report = {
         "join_type": how,
         "left_rows": left_rows,
         "right_rows": right_rows,
         "merged_rows": merged_rows,
+        "left_distinct_keys": left_distinct_keys,
+        "right_distinct_keys": right_distinct_keys,
+        "merged_distinct_keys": merged_distinct_keys,
+        "left_duplicate_key_rows": left_duplicate_key_rows,
+        "right_duplicate_key_rows": right_duplicate_key_rows,
+        "join_cardinality": join_cardinality,
         "unmatched_left_rows": unmatched_left,
         "unmatched_right_rows": unmatched_right,
-        "valid": True,
+        "valid": len(validation_issues) == 0,
+        "row_count_validation": {
+            "issues": validation_issues,
+            "expected_relationship": (
+                "merged_rows >= left_rows" if how == "left" else
+                "merged_rows >= right_rows" if how == "right" else
+                "merged_rows >= max(left_rows, right_rows)" if how == "outer" else
+                "matched rows only"
+            ),
+        },
     }
 
     if report_path is not None:
