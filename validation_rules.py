@@ -1,6 +1,13 @@
 import pandas as pd
 import os
 
+from dashboard import (
+    build_dashboard_kpis,
+    build_dashboard_trends,
+    build_dashboard_segments,
+    write_dashboard_report,
+)
+
 
 # Create output directory
 
@@ -199,6 +206,22 @@ if build_time_series_features is not None:
             print("Time-series analysis skipped: expected date/value columns are missing")
     except Exception as exc:
         print(f"Time-series analysis skipped: {exc}")
+
+# Dashboard report generation
+try:
+    dashboard_kpis = build_dashboard_kpis(clean_data)
+    dashboard_trends = build_dashboard_trends(clean_data)
+    dashboard_segments = build_dashboard_segments(clean_data)
+    write_dashboard_report(
+        dashboard_kpis,
+        dashboard_trends,
+        dashboard_segments,
+        output_path='output/dashboard_report.txt',
+        json_path='output/dashboard_report.json',
+    )
+    print("Dashboard summary written to output/dashboard_report.txt and output/dashboard_report.json")
+except Exception as exc:
+    print(f"Dashboard summary skipped: {exc}")
 
 # Optional root cause investigation report
 try:
