@@ -94,9 +94,52 @@ def test_validate_merge_reports_unmatched_rows_for_left_join():
     assert report["left_rows"] == 3
     assert report["right_rows"] == 3
     assert report["merged_rows"] == 3
+    assert report["left_distinct_keys"] == 3
+    assert report["right_distinct_keys"] == 3
+    assert report["merged_distinct_keys"] == 3
     assert report["unmatched_left_rows"] == 1
     assert report["unmatched_right_rows"] == 1
+    assert report["join_cardinality"] == "one-to-one"
     assert report["join_type"] == "left"
+    assert report["valid"] is True
+
+
+def test_validate_merge_detects_one_to_many_cardinality():
+    from data_validation import validate_merge
+
+    left = pd.DataFrame(
+        {
+            "customer_id": [1, 2, 2, 3],
+            "amount": [100.0, 200.0, 250.0, 300.0],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "customer_id": [2, 3, 4],
+            "product_category": ["Books", "Electronics", "Clothing"],
+        }
+    )
+
+    merged_df, report = validate_merge(
+        left,
+        right,
+        on="customer_id",
+        how="left",
+        output_unmatched_left="output/test_unmatched_left.csv",
+        output_unmatched_right="output/test_unmatched_right.csv",
+    )
+
+    assert len(merged_df) == 4
+    assert report["left_rows"] == 4
+    assert report["right_rows"] == 3
+    assert report["merged_rows"] == 4
+    assert report["left_distinct_keys"] == 3
+    assert report["right_distinct_keys"] == 3
+    assert report["merged_distinct_keys"] == 3
+    assert report["join_cardinality"] == "one-to-many"
+    assert report["valid"] is True
+    assert report["unmatched_left_rows"] == 1
+    assert report["unmatched_right_rows"] == 1
 
 
 def test_build_segment_insights_creates_ranked_summary_and_pivot():
