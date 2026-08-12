@@ -174,7 +174,37 @@ The dashboard provides valuable insights including:
 
 ---
 
-# 🚀 Future Enhancements
+# � Business Visualisation Principles
+
+## Choosing the Right Chart Type
+
+Every chart type has a purpose. Bar charts compare categories; line charts show trends over time; histograms describe distributions; scatter plots expose correlation; stacked bars show composition. Choosing the wrong chart creates confusion and delays decisions.
+
+### Recommended chart matches
+
+- Bar Chart: comparison across categories such as revenue by product line or sales by region.
+- Line Chart: trends over time such as monthly revenue, weekly active users, or churn rate.
+- Histogram: distribution of values such as order values or customer age bands.
+- Scatter Plot: relationship between two variables such as marketing spend and revenue.
+- Stacked Bar: composition and part-to-whole relationships such as quarterly revenue by product.
+
+## Complete Labelling
+
+Every chart should include a clear title, axis labels with units, a legend when needed, and labels on key bars or points. Human-readable formatting reduces cognitive load and makes charts comprehensible in seconds.
+
+## Colour Palette and Accessibility
+
+Use one consistent palette across all dashboards, and avoid relying on colour alone to communicate meaning. Pair colour with shape, line style, or text to keep the dashboard accessible for colour-blind viewers.
+
+## Annotation and Context
+
+Use annotations for insights such as peaks, dips, launch dates, and targets. Reference lines help viewers judge performance against benchmarks and convert raw data into decisions.
+
+> Branch 2.45 includes the dashboard visualisation update and documentation for PR creation.
+
+---
+
+# �🚀 Future Enhancements
 
 - AI-powered Content Recommendation System
 - Viewer Segmentation
