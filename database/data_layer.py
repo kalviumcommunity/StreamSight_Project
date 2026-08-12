@@ -4,8 +4,8 @@ import re
 VIEW_PREFIX = "vw_"
 AGG_PREFIX = "agg_"
 
-CREATE_VIEW_PATTERN = re.compile(r"^\s*create\s+(or\s+replace\s+)?view\b", re.IGNORECASE)
-CREATE_TABLE_PATTERN = re.compile(r"^\s*create\s+(table|table\s+if\s+not\s+exists)\b", re.IGNORECASE)
+CREATE_VIEW_PATTERN = re.compile(r"^\s*create\s+(or\s+replace\s+)?view\b", re.IGNORECASE | re.MULTILINE)
+CREATE_TABLE_PATTERN = re.compile(r"^\s*create\s+(table|table\s+if\s+not\s+exists)\b", re.IGNORECASE | re.MULTILINE)
 UPDATED_AT_PATTERN = re.compile(r"updated_at", re.IGNORECASE)
 
 
