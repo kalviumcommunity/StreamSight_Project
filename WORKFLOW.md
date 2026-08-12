@@ -1,6 +1,6 @@
 # Dataset Profiling & Quality Assessment
 
-This workflow document outlines the GitHub collaboration process for the StreamSight assignment on branch 2.16.
+This workflow document outlines the GitHub collaboration process for the StreamSight assignment on branch 2.45.
 
 # Team GitHub Workflow
 
@@ -41,6 +41,7 @@ This keeps the Git history clean and easy to understand.
 - Every change is submitted through a Pull Request.
 - PRs should reference related GitHub Issues.
 - At least one review is recommended before merging.
+- The branch 2.45 documents the business visualisation principles update and is ready for PR creation.
 - Code review focuses on:
   - Correctness
   - Readability
