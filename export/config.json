@@ -1,0 +1,66 @@
+{
+  "export_settings": {
+    "base_output_dir": "output",
+    "timestamp_format": "YYYY-MM-DD_HHMMSS",
+    "versioning_enabled": true,
+    "cleanup_old_exports": {
+      "enabled": true,
+      "days_to_keep": 30
+    }
+  },
+  "pdf_generation": {
+    "enabled": true,
+    "page_size": "A4",
+    "margin": "20mm"
+  },
+  "html_generation": {
+    "enabled": true,
+    "include_data_preview": true,
+    "preview_rows": 100,
+    "responsive_design": true
+  },
+  "email_settings": {
+    "enabled": true,
+    "smtp_server": "${SMTP_SERVER}",
+    "smtp_port": "${SMTP_PORT}",
+    "use_tls": true,
+    "sender_email": "${SENDER_EMAIL}",
+    "include_attachments": ["csv", "html", "metadata"]
+  },
+  "scheduled_reports": [
+    {
+      "name": "daily_kpi_report",
+      "schedule": "daily",
+      "time": "09:00",
+      "recipients": ["manager@company.com"],
+      "formats": ["csv", "html", "pdf"]
+    },
+    {
+      "name": "weekly_performance_report",
+      "schedule": "weekly",
+      "day": "monday",
+      "time": "09:00",
+      "recipients": ["team@company.com", "manager@company.com"],
+      "formats": ["csv", "html"]
+    },
+    {
+      "name": "monthly_executive_summary",
+      "schedule": "monthly",
+      "day": 1,
+      "time": "09:00",
+      "recipients": ["executives@company.com"],
+      "formats": ["pdf", "html"]
+    }
+  ],
+  "error_handling": {
+    "log_errors": true,
+    "alert_on_failure": true,
+    "retry_count": 3,
+    "retry_delay_seconds": 60
+  },
+  "logging": {
+    "level": "INFO",
+    "log_dir": "output/logs",
+    "retention_days": 30
+  }
+}
