@@ -1,0 +1,17 @@
+SQL VS PYTHON METRIC VALIDATION
+================================
+
+Alignment steps:
+1. SQL and Python use the same date ranges.
+2. Both calculations count distinct users.
+3. Both AOV calculations use order_amount.
+4. Both churn calculations identify customers active in the previous month but not the current month.
+5. Python date columns are explicitly converted to datetime.
+
+If a discrepancy occurs, investigate:
+- NULL handling
+- Date boundaries
+- Timezone differences
+- Data type conversion
+- JOIN behavior
+- Filter conditions

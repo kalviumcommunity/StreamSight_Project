@@ -1,0 +1,10 @@
+WHY MANUAL INVESTIGATION IS NECESSARY
+======================================
+
+A tolerance threshold only detects that two calculations are different. It does not determine which calculation is correct.
+
+Automatically fixing a discrepancy could change a correct metric into an incorrect one.
+
+Manual investigation is necessary to identify the actual root cause, such as NULL handling, date boundaries, timezone differences, joins, or incorrect filters.
+
+A metric can also slowly drift while remaining below the tolerance threshold. Therefore, automated validation should detect problems, while human investigation determines the correct fix.
