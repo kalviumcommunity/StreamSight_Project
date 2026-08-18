@@ -1,5 +1,6 @@
+import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 
@@ -46,19 +47,24 @@ def format_currency(x):
         return str(x)
 
 
-def compute_kpis(base: Path | str = None):
-    base = Path(base) if base else Path(__file__).parent
-    sales_path = base / "output" / "processed_sales.csv"
-    engagement_path = base / "output" / "validated_engagement_data.csv"
+def compute_kpis(base: Path | str = None, sales_df=None, engagement_df=None):
+    """
+    Compute KPIs from provided or cached DataFrames.
+    If sales_df and engagement_df are provided, use them instead of loading from disk.
+    """
+    if sales_df is None or engagement_df is None:
+        base = Path(base) if base else Path(__file__).parent
+        sales_path = base / "output" / "processed_sales.csv"
+        engagement_path = base / "output" / "validated_engagement_data.csv"
 
-    sales = pd.read_csv(sales_path, parse_dates=["transaction_date"]) if sales_path.exists() else pd.DataFrame()
-    engagement = pd.read_csv(engagement_path, parse_dates=["transaction_date"]) if engagement_path.exists() else pd.DataFrame()
+        sales_df = pd.read_csv(sales_path, parse_dates=["transaction_date"]) if sales_path.exists() else pd.DataFrame()
+        engagement_df = pd.read_csv(engagement_path, parse_dates=["transaction_date"]) if engagement_path.exists() else pd.DataFrame()
 
     candidates = []
-    if not sales.empty:
-        candidates.append(sales["transaction_date"]) 
-    if not engagement.empty:
-        candidates.append(engagement["transaction_date"]) 
+    if not sales_df.empty:
+        candidates.append(sales_df["transaction_date"]) 
+    if not engagement_df.empty:
+        candidates.append(engagement_df["transaction_date"]) 
 
     if not candidates:
         raise RuntimeError("No data available to compute KPIs")
@@ -73,11 +79,11 @@ def compute_kpis(base: Path | str = None):
         s = pd.to_datetime(df["transaction_date"]) 
         return df[(s.dt.month == month) & (s.dt.year == year)]
 
-    sales_cur = filter_month(sales, cur_month, cur_year)
-    sales_prior = filter_month(sales, prior_m, prior_y)
+    sales_cur = filter_month(sales_df, cur_month, cur_year)
+    sales_prior = filter_month(sales_df, prior_m, prior_y)
 
-    eng_cur = filter_month(engagement, cur_month, cur_year)
-    eng_prior = filter_month(engagement, prior_m, prior_y)
+    eng_cur = filter_month(engagement_df, cur_month, cur_year)
+    eng_prior = filter_month(engagement_df, prior_m, prior_y)
 
     # KPI calculations
     current_revenue = sales_cur["amount"].sum()
@@ -100,7 +106,7 @@ def compute_kpis(base: Path | str = None):
 
     # prior churn: compute churn between prior and prior-1 (best-effort)
     prior2_m, prior2_y = prior_month_year(prior_m, prior_y)
-    sales_prior2 = filter_month(sales, prior2_m, prior2_y)
+    sales_prior2 = filter_month(sales_df, prior2_m, prior2_y)
     prior2_customers = set(sales_prior2["customer_id"].unique()) if not sales_prior2.empty else set()
     if len(prior2_customers) == 0:
         prior_churn = 0.0
@@ -160,7 +166,7 @@ def compute_kpis(base: Path | str = None):
     df_kpis = pd.DataFrame(kpis)
     df_kpis["Change_Display"] = df_kpis["Change_Pct"].apply(lambda x: f"{x:+.1f}%" if x != 0 else "0%")
 
-    return kpis, df_kpis, (cur_month, cur_year)
+    return kpis, df_kpis, (cur_month, cur_year), sales_df, engagement_df
 
 
 def main():
@@ -208,3 +214,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
