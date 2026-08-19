@@ -20,7 +20,7 @@ class DashboardTests(unittest.TestCase):
                 "payment_status": ["Success", "Success", "Failed", "Success"],
             }
         )
-
+                   
     def test_build_dashboard_kpis(self):
         kpis = build_dashboard_kpis(self.df)
         self.assertIn("monthly_active_users", kpis)
