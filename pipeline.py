@@ -1,8 +1,9 @@
 import argparse
 import logging
-import os
+from datetime import datetime, timezone
+from pathlib import Path
+
 import pandas as pd
-from datetime import datetime
 
 
 logging.basicConfig(
@@ -22,27 +23,31 @@ def ingest(file_path: str) -> pd.DataFrame:
 def clean(df: pd.DataFrame) -> pd.DataFrame:
     logger.info("Cleaning data...")
     initial = len(df)
-    if "customer_id" in df.columns:
-        df = df.dropna(subset=["customer_id"])
-    if "amount" in df.columns:
-        df["amount"] = pd.to_numeric(df["amount"], errors="coerce")
-        df = df.dropna(subset=["amount"])
-        df = df[df["amount"] > 0]
-    logger.info("Cleaned: %d -> %d rows", initial, len(df))
-    return df
+    cleaned = df.copy()
+    if "customer_id" in cleaned.columns:
+        cleaned = cleaned.dropna(subset=["customer_id"])
+    elif "user_id" in cleaned.columns:
+        cleaned = cleaned.dropna(subset=["user_id"])
+    if "amount" in cleaned.columns:
+        cleaned["amount"] = pd.to_numeric(cleaned["amount"], errors="coerce")
+        cleaned = cleaned.dropna(subset=["amount"])
+        cleaned = cleaned[cleaned["amount"] > 0]
+    logger.info("Cleaned: %d -> %d rows", initial, len(cleaned))
+    return cleaned.reset_index(drop=True)
 
 
 def aggregate(df: pd.DataFrame) -> pd.DataFrame:
     logger.info("Aggregating...")
-    if "segment" not in df.columns:
-        df["segment"] = "all"
-    if "order_id" not in df.columns:
-        df["order_id"] = range(1, len(df) + 1)
-    if "amount" not in df.columns:
-        df["amount"] = 0
+    aggregated = df.copy()
+    if "segment" not in aggregated.columns:
+        aggregated["segment"] = "all"
+    if "order_id" not in aggregated.columns:
+        aggregated["order_id"] = range(1, len(aggregated) + 1)
+    if "amount" not in aggregated.columns:
+        aggregated["amount"] = 0
 
     agg = (
-        df.groupby("segment")
+        aggregated.groupby("segment", dropna=False)
         .agg(total_revenue=("amount", "sum"), order_count=("order_id", "count"), avg_order=("amount", "mean"))
         .reset_index()
     )
@@ -52,9 +57,10 @@ def aggregate(df: pd.DataFrame) -> pd.DataFrame:
 
 def write_output(df: pd.DataFrame, agg: pd.DataFrame, output_dir: str) -> None:
     logger.info("Writing output to: %s", output_dir)
-    os.makedirs(output_dir, exist_ok=True)
-    cleaned_path = os.path.join(output_dir, "cleaned_data.csv")
-    agg_path = os.path.join(output_dir, "aggregated_metrics.csv")
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    cleaned_path = output_path / "cleaned_data.csv"
+    agg_path = output_path / "aggregated_metrics.csv"
     df.to_csv(cleaned_path, index=False)
     agg.to_csv(agg_path, index=False)
     logger.info("Wrote %s and %s", cleaned_path, agg_path)
@@ -66,7 +72,7 @@ def main():
     parser.add_argument("--output", required=False, default="output", help="Output directory")
     args = parser.parse_args()
 
-    start = datetime.utcnow()
+    start = datetime.now(timezone.utc)
     logger.info("Pipeline started at %s UTC", start.isoformat())
     try:
         raw = ingest(args.input)
@@ -76,7 +82,7 @@ def main():
     except Exception as e:
         logger.exception("Pipeline failed: %s", e)
         raise
-    end = datetime.utcnow()
+    end = datetime.now(timezone.utc)
     logger.info("Pipeline finished at %s UTC (elapsed: %s)", end.isoformat(), end - start)
 
 
