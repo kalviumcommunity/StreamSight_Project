@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -66,8 +66,8 @@ def validate_data_quality(df):
     return True, "Data quality check passed"
 
 
-def deduplicate_records(df, subset=None, strategy="most_complete", audit_path=None):
-    """Remove duplicate records, preserve the best row, and write an audit trail."""
+def deduplicate_records(df, subset=None, strategy="most_complete", audit_path=None, report_path=None):
+    """Remove duplicates, preserve the best row, and write an audit trail."""
     if df is None:
         raise ValueError("A pandas DataFrame is required")
     if not isinstance(df, pd.DataFrame):
@@ -92,7 +92,9 @@ def deduplicate_records(df, subset=None, strategy="most_complete", audit_path=No
 
     original_df = df.copy()
     duplicate_mask = original_df.duplicated(subset=subset, keep=False)
+    exact_duplicate_mask = original_df.duplicated(keep=False)
     duplicate_groups = original_df.loc[duplicate_mask]
+    audit_timestamp = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
     rows_to_remove = []
     row_keep_map = {}
@@ -126,16 +128,23 @@ def deduplicate_records(df, subset=None, strategy="most_complete", audit_path=No
         audit_log.append({
             "row_index": int(row_idx),
             "retained_row_index": int(row_keep_map[row_idx]),
+            "duplicate_type": "exact" if exact_duplicate_mask.loc[row_idx] else "near",
             "strategy": strategy,
             "duplicate_subset": subset,
+            "removed_at": audit_timestamp,
             "reason": "Removed as duplicate based on the selected key columns.",
         })
 
     removed_df = original_df.loc[rows_to_remove].copy()
     if not removed_df.empty:
         removed_df["retained_row_index"] = removed_df.index.map(row_keep_map)
+        removed_df["duplicate_type"] = [
+            "exact" if exact_duplicate_mask.loc[row_idx] else "near"
+            for row_idx in removed_df.index
+        ]
         removed_df["deduplication_strategy"] = strategy
         removed_df["deduplication_reason"] = "Removed as duplicate based on the selected key columns."
+        removed_df["removed_at"] = audit_timestamp
 
     if audit_path is not None:
         path = Path(audit_path)
@@ -148,9 +157,17 @@ def deduplicate_records(df, subset=None, strategy="most_complete", audit_path=No
         "rows_removed": int(len(original_df) - len(deduped_df)),
         "removal_pct": round((len(original_df) - len(deduped_df)) / len(original_df) * 100, 2) if len(original_df) else 0.0,
         "duplicate_groups": int(duplicate_groups.groupby(subset, dropna=False).ngroups) if not duplicate_groups.empty else 0,
+        "exact_duplicate_rows": int(exact_duplicate_mask.loc[rows_to_remove].sum()) if rows_to_remove else 0,
+        "near_duplicate_rows": int(sum(not exact_duplicate_mask.loc[row_idx] for row_idx in rows_to_remove)),
         "strategy": strategy,
         "subset": subset,
     }
+
+    if report_path is not None:
+        path = Path(report_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", encoding="utf-8") as handle:
+            json.dump({"comparison": comparison, "audit_log": audit_log}, handle, indent=2, default=str)
 
     return deduped_df, audit_log, comparison
 
