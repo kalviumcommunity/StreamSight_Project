@@ -1,4 +1,6 @@
 import pandas as pd
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from root_cause_analysis import (
     check_threshold_alerts,
@@ -41,3 +43,22 @@ def test_build_anomaly_report_returns_structured_findings():
     assert report["anomaly_count"] == 1
     assert report["severity"] == "high"
     assert report["anomalies"][0]["value"] == 950
+
+
+def test_monitor_metrics_persists_statistical_anomaly_log():
+    from root_cause_analysis import monitor_metrics
+
+    series = pd.Series([100, 102, 98, 101, 100, 500], index=pd.date_range("2026-01-01", periods=6, freq="D"))
+    with TemporaryDirectory() as directory:
+        log_path = Path(directory) / "anomalies.csv"
+        result = monitor_metrics(
+            {"daily_revenue": 2500},
+            {"daily_revenue": {"min": 5000, "max": 50000}},
+            {"daily_revenue": series},
+            anomaly_log_path=log_path,
+        )
+
+        assert len(result["threshold_alerts"]) == 1
+        assert result["anomaly_reports"][0]["anomaly_count"] == 1
+        assert result["alert_count"] == 2
+        assert log_path.exists()
