@@ -74,6 +74,29 @@ class DataValidationTests(unittest.TestCase):
             self.assertEqual(len(audit_log), 2)
             self.assertTrue(os.path.exists(audit_path))
 
+    def test_deduplicate_records_reports_exact_and_near_duplicates(self):
+        df = pd.DataFrame(
+            {
+                "customer_id": [1, 1, 2, 2],
+                "transaction_date": ["2025-01-01"] * 2 + ["2025-01-02"] * 2,
+                "amount": [100.0, 100.0, None, 50.0],
+                "description": ["same", "same", None, "updated"],
+            }
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            report_path = os.path.join(tmpdir, "duplicate_report.json")
+            _, audit_log, comparison = deduplicate_records(
+                df,
+                subset=["customer_id", "transaction_date"],
+                report_path=report_path,
+            )
+
+            self.assertEqual(comparison["exact_duplicate_rows"], 1)
+            self.assertEqual(comparison["near_duplicate_rows"], 1)
+            self.assertEqual({entry["duplicate_type"] for entry in audit_log}, {"exact", "near"})
+            self.assertTrue(os.path.exists(report_path))
+
 
 if __name__ == "__main__":
     unittest.main()
