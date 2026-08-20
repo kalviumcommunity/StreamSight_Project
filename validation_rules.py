@@ -1,237 +1,131 @@
+"""Reusable validation rules for engagement data."""
+
+import json
+from pathlib import Path
+
 import pandas as pd
-import os
-
-from dashboard import (
-    build_dashboard_kpis,
-    build_dashboard_trends,
-    build_dashboard_segments,
-    write_dashboard_report,
-)
 
 
-# Create output directory
+def _require_dataframe(df):
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("Expected a pandas DataFrame")
 
 
-os.makedirs("output", exist_ok=True)
+def validate_range(series, minimum=None, maximum=None):
+    """Return a boolean mask for values inside an inclusive range."""
+    result = series.notna()
+    if minimum is not None:
+        result &= series >= minimum
+    if maximum is not None:
+        result &= series <= maximum
+    return result
 
 
-# Load data
-df = pd.read_csv(
-
-    
-    "data/engagement_data.csv"
-)
-
-print("Data loaded successfully")
-print(f"Total records: {len(df)}")
+def validate_not_null(series):
+    """Return a boolean mask for required values, including non-empty strings."""
+    return series.notna() & series.astype("string").str.strip().ne("")
 
 
-# Convert date
-df["transaction_date"] = pd.to_datetime(
-    df["transaction_date"],
-    format="%Y-%m-%d",
-    errors="coerce"
-)
+def validate_pattern(series, pattern):
+    """Return a boolean mask for values matching a regular expression."""
+    return series.astype("string").str.fullmatch(pattern, na=False)
 
 
-# Optional feature engineering utilities (safe no-op if columns missing)
-try:
-    from feature_engineering import (
-        transactions_per_month,
-        avg_spend_per_transaction,
-        lifetime_value_per_month,
-        engagement_bin,
-        spend_tier_quantile,
-        compute_rfm,
-    )
-except Exception:
-    transactions_per_month = None
+def validate_referential_integrity(series, valid_values):
+    """Return a boolean mask for foreign keys found in the reference values."""
+    return series.notna() & series.isin(set(valid_values))
 
 
-# Example: compute common ratio features only when source columns exist
-if transactions_per_month is not None and {'total_transactions', 'days_as_customer'}.issubset(df.columns):
-    df['transactions_per_month'] = transactions_per_month(df)
+def apply_validation_rules(df, reference_ids=None, today=None):
+    """Apply validation rules and return the annotated frame and rule columns."""
+    _require_dataframe(df)
+    validated = df.copy()
+    today = pd.Timestamp.today().normalize() if today is None else pd.Timestamp(today)
+    rule_columns = []
 
-if transactions_per_month is not None and {'total_spent', 'total_transactions'}.issubset(df.columns):
-    df['avg_spend_per_transaction'] = avg_spend_per_transaction(df)
+    def add_rule(name, mask):
+        validated[name] = mask.fillna(False).astype(bool)
+        rule_columns.append(name)
 
+    for column in ("user_id", "video_id", "customer_id"):
+        if column in validated:
+            add_rule(f"valid_{column}", validate_not_null(validated[column]))
 
+    ranges = {
+        "watch_duration": (0, None),
+        "pause_count": (0, None),
+        "completion_rate": (0, 100),
+        "amount": (0, None),
+        "price": (0, None),
+    }
+    for column, (minimum, maximum) in ranges.items():
+        if column in validated:
+            add_rule(f"valid_{column}", validate_range(validated[column], minimum, maximum))
 
-# ==============================
-# VALIDATION RULES
-# ==============================
+    if "email" in validated:
+        add_rule("valid_email_format", validate_pattern(validated["email"], r"[^@\s]+@[^@\s]+\.[^@\s]+"))
+    if "phone" in validated:
+        add_rule("valid_phone_format", validate_pattern(validated["phone"], r"\d{10}"))
+    if "product_category" in validated:
+        add_rule("valid_product_category", validate_not_null(validated["product_category"]))
 
-# Null checks
-df["valid_user_id"] = df["user_id"].notna()
+    if reference_ids is not None and "customer_id" in validated:
+        add_rule("valid_customer_reference", validate_referential_integrity(validated["customer_id"], reference_ids))
 
-df["valid_video_id"] = df["video_id"].notna()
+    if "transaction_date" in validated:
+        dates = pd.to_datetime(validated["transaction_date"], errors="coerce")
+        add_rule("valid_transaction_date", dates.notna() & (dates <= today))
 
+    if {"start_date", "end_date"}.issubset(validated.columns):
+        starts = pd.to_datetime(validated["start_date"], errors="coerce")
+        ends = pd.to_datetime(validated["end_date"], errors="coerce")
+        add_rule("valid_date_order", starts.notna() & ends.notna() & (ends >= starts))
+    elif {"campaign_start_date", "campaign_end_date"}.issubset(validated.columns):
+        starts = pd.to_datetime(validated["campaign_start_date"], errors="coerce")
+        ends = pd.to_datetime(validated["campaign_end_date"], errors="coerce")
+        add_rule("valid_campaign_date_order", starts.notna() & ends.notna() & (ends >= starts))
 
-# Range checks
-df["valid_watch_duration"] = (
-    df["watch_duration"] >= 0
-)
-
-df["valid_pause_count"] = (
-    df["pause_count"] >= 0
-)
-
-df["valid_completion_rate"] = (
-    (df["completion_rate"] >= 0) &
-    (df["completion_rate"] <= 100)
-)
-
-df["valid_amount"] = (
-    df["amount"] >= 0
-)
-
-
-# Business rule
-today = pd.Timestamp.today().normalize()
-
-df["valid_transaction_date"] = (
-    df["transaction_date"] <= today
-)
-
-
-# ==============================
-# COMBINE VALIDATION RESULTS
-# ==============================
-
-validation_cols = [
-    "valid_user_id",
-    "valid_video_id",
-    "valid_watch_duration",
-    "valid_pause_count",
-    "valid_completion_rate",
-    "valid_transaction_date",
-    "valid_amount"
-]
-
-df["passes_all_checks"] = (
-    df[validation_cols].all(axis=1)
-)
+    if not rule_columns:
+        raise ValueError("No supported validation columns found")
+    validated["passes_all_checks"] = validated[rule_columns].all(axis=1)
+    return validated, rule_columns
 
 
-# ==============================
-# ISOLATE FAILURES
-# ==============================
-
-failures = df[
-    ~df["passes_all_checks"]
-]
-
-clean_data = df[
-    df["passes_all_checks"]
-]
-
-
-# ==============================
-# SAVE OUTPUT
-# ==============================
-
-failures.to_csv(
-    "output/validation_failures.csv",
-    index=False
-)
-
-clean_data.to_csv(
-    "output/validated_engagement_data.csv",
-    index=False
-)
+def build_validation_report(validated, rule_columns):
+    """Build a JSON-serializable summary of validation results."""
+    _require_dataframe(validated)
+    return {
+        "total_records": len(validated),
+        "passed_records": int(validated["passes_all_checks"].sum()),
+        "failed_records": int((~validated["passes_all_checks"]).sum()),
+        "rules": {
+            rule: {
+                "passed": int(validated[rule].sum()),
+                "failed": int((~validated[rule]).sum()),
+            }
+            for rule in rule_columns
+        },
+    }
 
 
-# ==============================
-# REPORT
-# ==============================
-
-print("\n==============================")
-print("VALIDATION REPORT")
-print("==============================")
-
-print(f"Total Records : {len(df)}")
-print(f"Passed        : {len(clean_data)}")
-print(f"Failed        : {len(failures)}")
-
-
-print("\nRule Results:")
-
-for column in validation_cols:
-
-    passed = df[column].sum()
-
-    failed = len(df) - passed
-
-    print(
-        f"{column}: "
-        f"Passed={passed}, "
-        f"Failed={failed}"
-    )
+def run_validation(input_path="data/engagement_data.csv", output_dir="output", reference_ids=None):
+    """Validate a CSV, isolate failures, and write clean data and a JSON report."""
+    df = pd.read_csv(input_path)
+    validated, rule_columns = apply_validation_rules(df, reference_ids=reference_ids)
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    validated.loc[~validated["passes_all_checks"]].to_csv(output_path / "validation_failures.csv", index=False)
+    validated.loc[validated["passes_all_checks"]].to_csv(output_path / "validated_engagement_data.csv", index=False)
+    report = build_validation_report(validated, rule_columns)
+    with (output_path / "validation_report.json").open("w", encoding="utf-8") as handle:
+        json.dump(report, handle, indent=2)
+    return validated, report
 
 
-print("\nOutput files created:")
-print("- output/validation_failures.csv")
-print("- output/validated_engagement_data.csv")
-
-# Optional segment aggregation insights
-try:
-    from segment_analysis import build_segment_summary, build_pivot_table, write_segment_insights
-except Exception:
-    build_segment_summary = None
-
-if build_segment_summary is not None:
-    try:
-        if {'customer_type', 'product_category', 'amount', 'customer_id'}.issubset(clean_data.columns):
-            write_segment_insights(clean_data, output_path='output/segment_insights.txt')
-            print("Segment insights written to output/segment_insights.txt")
-        else:
-            print("Segment insights skipped: expected business columns are missing")
-    except Exception as exc:
-        print(f"Segment insights skipped: {exc}")
-
-# Optional time-series trend analysis
-try:
-    from time_series_analysis import build_time_series_features, plot_time_series, write_time_series_summary
-except Exception:
-    build_time_series_features = None
-
-if build_time_series_features is not None:
-    try:
-        if {'transaction_date', 'amount'}.issubset(clean_data.columns):
-            ts_df = build_time_series_features(clean_data)
-            plot_time_series(ts_df, output_path='output/time_series_trend.png')
-            write_time_series_summary(ts_df, output_path='output/time_series_summary.txt')
-            print("Time-series trends written to output/time_series_trend.png and output/time_series_summary.txt")
-        else:
-            print("Time-series analysis skipped: expected date/value columns are missing")
-    except Exception as exc:
-        print(f"Time-series analysis skipped: {exc}")
-
-# Dashboard report generation
-try:
-    dashboard_kpis = build_dashboard_kpis(clean_data)
-    dashboard_trends = build_dashboard_trends(clean_data)
-    dashboard_segments = build_dashboard_segments(clean_data)
-    write_dashboard_report(
-        dashboard_kpis,
-        dashboard_trends,
-        dashboard_segments,
-        output_path='output/dashboard_report.txt',
-        json_path='output/dashboard_report.json',
-    )
-    print("Dashboard summary written to output/dashboard_report.txt and output/dashboard_report.json")
-except Exception as exc:
-    print(f"Dashboard summary skipped: {exc}")
-
-# Optional root cause investigation report
-try:
-    from root_cause_analysis import write_investigation_report
-except Exception:
-    write_investigation_report = None
-
-if write_investigation_report is not None:
-    try:
-        report_path = write_investigation_report(clean_data, output_path='output/root_cause_report.txt')
-        print(f"Root cause report written to {report_path}")
-    except Exception as exc:
-        print(f"Root cause report skipped: {exc}")
+if __name__ == "__main__":
+    validated_df, validation_report = run_validation()
+    print(f"Total Records : {validation_report['total_records']}")
+    print(f"Passed        : {validation_report['passed_records']}")
+    print(f"Failed        : {validation_report['failed_records']}")
+    for rule, counts in validation_report["rules"].items():
+        print(f"{rule}: Passed={counts['passed']}, Failed={counts['failed']}")
