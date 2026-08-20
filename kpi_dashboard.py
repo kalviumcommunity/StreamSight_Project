@@ -2,6 +2,14 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
+import sys
+import logging
+
+# Add export module to path
+sys.path.insert(0, str(Path(__file__).parent))
+from export.email_delivery import EmailDelivery
+
+logger = logging.getLogger(__name__)
 
 
 def month_year_from_date_series(s: pd.Series):
@@ -210,6 +218,103 @@ def main():
     st.markdown("- AOV: output/processed_sales.csv (mean `amount` by month)")
     st.markdown("- Churn Rate: computed from `customer_id` activity across months in output/processed_sales.csv")
     st.markdown("- Customer Satisfaction: `completion_rate` in output/validated_engagement_data.csv mapped to 5-point scale")
+
+    # ============ INSIGHT DELIVERY SECTION ============
+    st.divider()
+    st.subheader("📧 Insight Delivery - Email Report")
+    st.markdown("Send structured KPI reports directly to stakeholders. No manual exports needed.")
+
+    with st.sidebar:
+        st.header("Report Actions")
+        st.markdown("Generate and email your KPI insights to stakeholders.")
+
+        recipient = st.text_input(
+            "Recipient Email",
+            placeholder="stakeholder@company.com",
+            help="Enter email address to receive the report"
+        )
+
+        cc_emails_input = st.text_input(
+            "CC Emails (optional)",
+            placeholder="email1@company.com, email2@company.com",
+            help="Comma-separated list of CC recipients"
+        )
+
+        include_csv = st.checkbox("Include CSV attachment", value=True)
+
+        if st.button("📨 Generate & Send Report", type="primary"):
+            if not recipient:
+                st.sidebar.error("❌ Please enter a recipient email address.")
+            else:
+                try:
+                    # Initialize email delivery
+                    email_service = EmailDelivery()
+
+                    # Get data for report
+                    kpis_data, _, _, sales_df, engagement_df = compute_kpis()
+
+                    # Combine data for analysis
+                    combined_df = pd.DataFrame()
+                    if not sales_df.empty:
+                        combined_df = sales_df.copy()
+
+                    # Generate structured report
+                    additional_kpis_dict = {
+                        kpi["Metric"]: f"{kpi['Current']:.2f} ({kpi['Change_Pct']:+.1f}%)"
+                        for kpi in kpis_data
+                    }
+
+                    report_text = EmailDelivery.generate_structured_report(
+                        data_df=combined_df,
+                        report_date=datetime.now().date(),
+                        segment_column="segment" if "segment" in combined_df.columns else None,
+                        revenue_column="amount" if "amount" in combined_df.columns else "revenue",
+                        customer_column="customer_id",
+                        additional_kpis=additional_kpis_dict
+                    )
+
+                    # Prepare attachments
+                    attachments = []
+                    if include_csv and not combined_df.empty:
+                        csv_path = Path(__file__).parent / "output" / "processed_sales.csv"
+                        if csv_path.exists():
+                            attachments.append(str(csv_path))
+
+                    # Parse CC emails
+                    cc_list = None
+                    if cc_emails_input:
+                        cc_list = [email.strip() for email in cc_emails_input.split(",")]
+
+                    # Send email
+                    success = email_service.send_report(
+                        recipient_email=recipient,
+                        subject=f"Weekly Analytics Report - {datetime.now().strftime('%B %d, %Y')}",
+                        body=report_text,
+                        attachments=attachments if attachments else None,
+                        cc_emails=cc_list
+                    )
+
+                    if success:
+                        st.sidebar.success(f"✅ Report sent successfully to {recipient}!")
+                        st.sidebar.info("💡 Tip: The stakeholder will receive the KPI summary, key findings, and recommended actions in their inbox.")
+                    else:
+                        st.sidebar.error("❌ Failed to send report. Check your email configuration in .env file.")
+                        st.sidebar.info("📝 Configure SENDER_EMAIL and SENDER_PASSWORD in .env file. See .env.example for details.")
+
+                except Exception as e:
+                    st.sidebar.error(f"❌ Error: {str(e)}")
+                    logger.exception("Failed to send email report")
+
+        st.markdown("---")
+        st.markdown("**Email Configuration:**")
+        st.markdown("""
+        1. Copy `.env.example` to `.env`
+        2. Add your SMTP credentials (Gmail app password recommended)
+        3. Reports will be sent automatically with this section visible
+        """)
+        
+        if not EmailDelivery().sender_email:
+            st.warning("⚠️ Email not configured. Please set up .env file with SENDER_EMAIL and SENDER_PASSWORD.")
 
 
 if __name__ == "__main__":

@@ -213,3 +213,115 @@ Contact the analytics team.
 This report was generated automatically by the analytics platform.
 """
         return email_body
+
+    @staticmethod
+    def generate_structured_report(
+        data_df,
+        report_date=None,
+        segment_column: str = "segment",
+        revenue_column: str = "revenue",
+        customer_column: str = "customer_id",
+        additional_kpis: Optional[dict] = None
+    ) -> str:
+        """
+        Generate a structured report with KPI Summary, Key Findings, and Recommended Actions.
+
+        Args:
+            data_df: Pandas DataFrame with analysis data
+            report_date: Report date (defaults to today)
+            segment_column: Column name for segments
+            revenue_column: Column name for revenue
+            customer_column: Column name for customers
+            additional_kpis: Dictionary of additional KPIs to include
+
+        Returns:
+            Formatted report text with three sections: KPI Summary, Key Finding, Recommended Action
+        """
+        from datetime import datetime
+        import pandas as pd
+
+        if report_date is None:
+            report_date = datetime.now().date()
+
+        report_lines = []
+        report_lines.append("=" * 60)
+        report_lines.append("WEEKLY ANALYTICS REPORT")
+        report_lines.append("=" * 60)
+        report_lines.append(f"Generated: {report_date.strftime('%B %d, %Y')}")
+        report_lines.append("")
+
+        # SECTION 1: KPI SUMMARY
+        report_lines.append("== KPI SUMMARY ==")
+        report_lines.append("")
+
+        if not data_df.empty:
+            # Calculate core KPIs
+            total_revenue = data_df[revenue_column].sum()
+            active_customers = data_df[customer_column].nunique()
+            avg_order_value = data_df[revenue_column].mean()
+            record_count = len(data_df)
+
+            report_lines.append(f"Total Revenue: ${total_revenue:,.2f}")
+            report_lines.append(f"Active Customers: {active_customers:,}")
+            report_lines.append(f"Average Order Value: ${avg_order_value:,.2f}")
+            report_lines.append(f"Total Records: {record_count:,}")
+
+            # Add additional KPIs if provided
+            if additional_kpis:
+                report_lines.append("")
+                for kpi_name, kpi_value in additional_kpis.items():
+                    report_lines.append(f"{kpi_name}: {kpi_value}")
+
+        report_lines.append("")
+        report_lines.append("")
+
+        # SECTION 2: KEY FINDING
+        report_lines.append("== KEY FINDING ==")
+        report_lines.append("")
+
+        if not data_df.empty and segment_column in data_df.columns:
+            # Find top performing segment
+            top_segment = (
+                data_df.groupby(segment_column)[revenue_column]
+                .sum()
+                .idxmax()
+            )
+            top_segment_revenue = (
+                data_df.groupby(segment_column)[revenue_column]
+                .sum()
+                .max()
+            )
+            total = data_df[revenue_column].sum()
+            percentage = (top_segment_revenue / total * 100) if total > 0 else 0
+
+            report_lines.append(f"Top performing segment: {top_segment}")
+            report_lines.append(f"Revenue: ${top_segment_revenue:,.2f} ({percentage:.1f}% of total)")
+            report_lines.append("")
+            report_lines.append("Segment Breakdown:")
+            segment_summary = (
+                data_df.groupby(segment_column)[revenue_column]
+                .sum()
+                .sort_values(ascending=False)
+            )
+            for segment, value in segment_summary.items():
+                pct = (value / total * 100) if total > 0 else 0
+                report_lines.append(f"  • {segment}: ${value:,.2f} ({pct:.1f}%)")
+        else:
+            report_lines.append("Segment analysis not available for this dataset.")
+
+        report_lines.append("")
+        report_lines.append("")
+
+        # SECTION 3: RECOMMENDED ACTION
+        report_lines.append("== RECOMMENDED ACTION ==")
+        report_lines.append("")
+        report_lines.append("1. Review segment performance and identify growth opportunities")
+        report_lines.append("2. Allocate resources to high-performing segments")
+        report_lines.append("3. Investigate underperforming segments for improvement areas")
+        report_lines.append("4. Share findings with cross-functional teams for strategic alignment")
+        report_lines.append("")
+        report_lines.append("=" * 60)
+        report_lines.append("End of Report")
+        report_lines.append("=" * 60)
+
+        return "\n".join(report_lines)

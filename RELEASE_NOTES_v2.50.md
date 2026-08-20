@@ -12,14 +12,14 @@
 StreamSight now includes a complete **Export & Report Generation System** that enables stakeholders to receive analytical insights in multiple portable formats automatically. This eliminates manual export work and ensures reports reach decision-makers reliably.
 
 ## Key Features
-
+              
 ### 1. 🎯 Multi-Format Export
 Generate three formats automatically from a single function call:
 
 - **CSV** - Cleaned datasets with metadata for Excel analysis
 - **PDF** - Professional reports suitable for email and meetings
 - **HTML** - Interactive reports with embedded Plotly charts
-
+    
 ### 2. 📊 Automated Report Generation
 Export comprehensive reports with:
 - Data export with optional data dictionary
