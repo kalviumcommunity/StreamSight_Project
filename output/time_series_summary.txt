@@ -1,8 +1,0 @@
-Time-Series Summary
-===================
-
-Latest value: 1500.75
-7-day rolling mean: nan
-30-day rolling mean: nan
-Latest period change pct: 66.75%
-Cumulative value: 3601.25
