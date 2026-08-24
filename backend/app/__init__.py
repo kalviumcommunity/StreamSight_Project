@@ -15,7 +15,8 @@ def create_app(config_name=None):
     db.init_app(app)
     jwt.init_app(app)
     migrate.init_app(app, db)
-    cors.init_app(app, resources={r"/api/*": {"origins": app.config["FRONTEND_URL"]}})
+    allowed_origins = [origin.strip() for origin in app.config["FRONTEND_URL"].split(",") if origin.strip()]
+    cors.init_app(app, resources={r"/api/*": {"origins": allowed_origins}})
 
     register_error_handlers(app)
     _register_jwt_handlers(jwt)
