@@ -1,6 +1,9 @@
 import pandas as pd
+import streamlit as st
 from datetime import datetime
 from pathlib import Path
+
+from upload_preview import render_upload_preview
 
 
 def month_year_from_date_series(s: pd.Series):
@@ -164,6 +167,13 @@ def compute_kpis(base: Path | str = None):
 
 
 def main():
+    st.title("KPI Dashboard")
+    uploaded_file = st.file_uploader(
+        "Upload your dataset",
+        type=["csv", "json"],
+    )
+    uploaded_df = render_upload_preview(uploaded_file)
+
     # Use compute_kpis to get values then render with Streamlit
     kpis, df_kpis, report_month = compute_kpis()
 
