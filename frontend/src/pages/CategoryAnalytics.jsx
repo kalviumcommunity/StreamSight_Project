@@ -43,7 +43,7 @@ export default function CategoryAnalytics() {
               <CartesianGrid stroke={CHART_GRID} vertical={false} />
               <XAxis dataKey="category" stroke={CHART_AXIS} fontSize={12} />
               <YAxis stroke={CHART_AXIS} fontSize={12} />
-              <Tooltip contentStyle={{ background: '#1c202b', border: '1px solid #262b38' }} />
+              <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e6e1f5' }} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Bar dataKey="views" fill={CATEGORICAL[0]} name="Views" radius={[4, 4, 0, 0]} />
               <Bar dataKey="retention_score" fill={CATEGORICAL[2]} name="Retention Score" radius={[4, 4, 0, 0]} />
