@@ -61,7 +61,7 @@ export default function ViewerAnalytics() {
               <CartesianGrid stroke={CHART_GRID} vertical={false} />
               <XAxis dataKey="created_at" stroke={CHART_AXIS} fontSize={11} />
               <YAxis stroke={CHART_AXIS} fontSize={12} />
-              <Tooltip contentStyle={{ background: '#1c202b', border: '1px solid #262b38' }} />
+              <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e6e1f5' }} />
               <Line type="monotone" dataKey="average_watch_time" stroke={CATEGORICAL[0]} strokeWidth={2} dot={false} name="Avg Watch Time (s)" />
             </LineChart>
           </ResponsiveContainer>
@@ -73,7 +73,7 @@ export default function ViewerAnalytics() {
               <CartesianGrid stroke={CHART_GRID} vertical={false} />
               <XAxis dataKey="created_at" stroke={CHART_AXIS} fontSize={11} />
               <YAxis stroke={CHART_AXIS} fontSize={12} />
-              <Tooltip contentStyle={{ background: '#1c202b', border: '1px solid #262b38' }} />
+              <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e6e1f5' }} />
               <Line type="monotone" dataKey="average_completion_rate" stroke={CATEGORICAL[2]} strokeWidth={2} dot={false} name="Completion %" />
             </LineChart>
           </ResponsiveContainer>
@@ -87,7 +87,7 @@ export default function ViewerAnalytics() {
               <CartesianGrid stroke={CHART_GRID} vertical={false} />
               <XAxis dataKey="created_at" stroke={CHART_AXIS} fontSize={11} />
               <YAxis stroke={CHART_AXIS} fontSize={12} />
-              <Tooltip contentStyle={{ background: '#1c202b', border: '1px solid #262b38' }} />
+              <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e6e1f5' }} />
               <Bar dataKey="average_pause_frequency" fill={CATEGORICAL[3]} radius={[4, 4, 0, 0]} name="Avg Pauses" />
             </BarChart>
           </ResponsiveContainer>
@@ -99,7 +99,7 @@ export default function ViewerAnalytics() {
               <CartesianGrid stroke={CHART_GRID} vertical={false} />
               <XAxis dataKey="created_at" stroke={CHART_AXIS} fontSize={11} />
               <YAxis stroke={CHART_AXIS} fontSize={12} domain={[0, 100]} />
-              <Tooltip contentStyle={{ background: '#1c202b', border: '1px solid #262b38' }} />
+              <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e6e1f5' }} />
               <Line type="monotone" dataKey="retention_score" stroke={CATEGORICAL[6]} strokeWidth={2} dot={false} name="Retention Score" />
             </LineChart>
           </ResponsiveContainer>

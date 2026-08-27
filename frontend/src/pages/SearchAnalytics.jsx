@@ -52,7 +52,7 @@ export default function SearchAnalytics() {
               <CartesianGrid stroke={CHART_GRID} vertical={false} />
               <XAxis dataKey="timestamp" stroke={CHART_AXIS} fontSize={11} />
               <YAxis stroke={CHART_AXIS} fontSize={12} />
-              <Tooltip contentStyle={{ background: '#1c202b', border: '1px solid #262b38' }} />
+              <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e6e1f5' }} />
               <Bar dataKey="count" fill={CATEGORICAL[0]} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>

@@ -50,7 +50,7 @@ export default function AdminDashboard() {
               <CartesianGrid stroke={CHART_GRID} vertical={false} />
               <XAxis dataKey="created_at" stroke={CHART_AXIS} fontSize={12} />
               <YAxis stroke={CHART_AXIS} fontSize={12} />
-              <Tooltip contentStyle={{ background: '#1c202b', border: '1px solid #262b38' }} />
+              <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e6e1f5' }} />
               <Line type="monotone" dataKey="views" stroke={CATEGORICAL[0]} strokeWidth={2} dot={false} name="Views" />
               <Line type="monotone" dataKey="average_completion_rate" stroke={CATEGORICAL[2]} strokeWidth={2} dot={false} name="Completion %" />
             </LineChart>
@@ -63,7 +63,7 @@ export default function AdminDashboard() {
               <CartesianGrid stroke={CHART_GRID} vertical={false} />
               <XAxis dataKey="range" stroke={CHART_AXIS} fontSize={11} />
               <YAxis stroke={CHART_AXIS} fontSize={12} />
-              <Tooltip contentStyle={{ background: '#1c202b', border: '1px solid #262b38' }} />
+              <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e6e1f5' }} />
               <Bar dataKey="viewers" fill={CATEGORICAL[1]} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -107,7 +107,7 @@ export default function AdminDashboard() {
               <CartesianGrid stroke={CHART_GRID} horizontal={false} />
               <XAxis type="number" stroke={CHART_AXIS} fontSize={12} />
               <YAxis type="category" dataKey="category" stroke={CHART_AXIS} fontSize={12} width={90} />
-              <Tooltip contentStyle={{ background: '#1c202b', border: '1px solid #262b38' }} />
+              <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e6e1f5' }} />
               <Bar dataKey="views" fill={CATEGORICAL[0]} radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
