@@ -14,6 +14,8 @@ This repository documents the StreamSight assignment focused on dataset profilin
 
 StreamSight is a Python-based viewer engagement analytics platform designed to help streaming service providers understand audience behavior through data. The platform provides a simplified video streaming experience where user interactions such as watch duration, pause frequency, completion rate, and search activity are recorded and analyzed.
 
+Live demo: [StreamSight Live Demo](https://streamsightpro.netlify.app)
+
 Instead of focusing on building a complete streaming platform, StreamSight emphasizes collecting engagement metrics and converting them into meaningful insights that help acquisition teams make informed content investment decisions.
 
 ---
